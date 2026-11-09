@@ -1,0 +1,862 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "Press banca",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-bench-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000002",
+    "name": "Press inclinado",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-incline-bench-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000004",
+    "name": "Jalón",
+    "group": "Espalda",
+    "image": "assets/exercises/repdb-lat-pulldown.png",
+    "usesCable": false,
+    "grips": [
+      "Abierto",
+      "Cerrado",
+      "Neutro",
+      "Invertido"
+    ],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000007",
+    "name": "Elevaciones laterales",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-lateral-raise.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000008",
+    "name": "Prensa",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-high-foot-leg-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000009",
+    "name": "Extensión de cuádriceps",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-leg-extension.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000011",
+    "name": "Predicador en máquina",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-machine-preacher-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000012",
+    "name": "Extensión de tríceps",
+    "group": "Tríceps",
+    "image": "assets/exercises/repdb-v-bar-tricep-pushdown.png",
+    "usesCable": true,
+    "grips": [
+      "Barra recta",
+      "Cuerda",
+      "Pez",
+      "V"
+    ],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000013",
+    "name": "Crunch polea",
+    "group": "Abdomen",
+    "image": "assets/exercises/repdb-cable-crunch.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000014",
+    "name": "Hip thrust",
+    "group": "Glúteo",
+    "image": null,
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000015",
+    "name": "Patada de glúteo",
+    "group": "Glúteo",
+    "image": null,
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000016",
+    "name": "Abducción en máquina",
+    "group": "Glúteo",
+    "image": null,
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000017",
+    "name": "Curl con barra Z",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-ez-bar-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000018",
+    "name": "Curl con barra recta",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-barbell-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000019",
+    "name": "Curl con mancuernas",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-bicep-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000020",
+    "name": "Curl en polea",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-cable-curl.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000021",
+    "name": "Predicador con mancuerna",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-db-preacher-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000022",
+    "name": "Predicador en polea",
+    "group": "Bíceps",
+    "image": "assets/exercises/custom-preacher-cable.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000023",
+    "name": "Curl Bayesian en máquina",
+    "group": "Bíceps",
+    "image": "assets/exercises/custom-bayesian-machine.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000024",
+    "name": "Curl Bayesian en banco inclinado",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-incline-db-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000025",
+    "name": "Curl 15 con barra Z",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-ez-bar-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000026",
+    "name": "Curl 21 con barra Z",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-ez-bar-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000027",
+    "name": "Extensión overhead de tríceps",
+    "group": "Tríceps",
+    "image": "assets/exercises/repdb-cable-overhead-tricep-extension.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000028",
+    "name": "Press francés",
+    "group": "Tríceps",
+    "image": "assets/exercises/repdb-db-skull-crusher.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000029",
+    "name": "Extensión unilateral con strap",
+    "group": "Tríceps",
+    "image": "assets/exercises/repdb-single-arm-tricep-pushdown.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000030",
+    "name": "Patada de tríceps con mancuerna",
+    "group": "Tríceps",
+    "image": "assets/exercises/repdb-tricep-kickback.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000031",
+    "name": "Patada de tríceps en polea",
+    "group": "Tríceps",
+    "image": "assets/exercises/repdb-cable-tricep-kickback.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000032",
+    "name": "Fondos en paralelas",
+    "group": "Tríceps",
+    "image": "assets/exercises/repdb-dips.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000033",
+    "name": "Fondos en paralelas",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-dips.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000034",
+    "name": "Katana posterior",
+    "group": "Hombro",
+    "image": "assets/exercises/custom-posterior-cable-cross.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000035",
+    "name": "Curl de muñeca con barra recta por detrás",
+    "group": "Antebrazo",
+    "image": "assets/exercises/repdb-behind-the-back-barbell-shrug.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000036",
+    "name": "Curl de muñeca con mancuerna",
+    "group": "Antebrazo",
+    "image": "assets/exercises/repdb-dumbbell-wrist-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000037",
+    "name": "Curl de muñeca con polea",
+    "group": "Antebrazo",
+    "image": "assets/exercises/repdb-cable-wrist-curl.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000038",
+    "name": "Press banca con mancuernas",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-db-bench-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000039",
+    "name": "Press inclinado con mancuernas",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-incline-db-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000040",
+    "name": "Press banca en Smith",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-smith-machine-bench-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000041",
+    "name": "Press inclinado en Smith",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-smith-machine-incline-bench-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000042",
+    "name": "Press de pecho en máquina",
+    "group": "Pecho",
+    "image": "assets/exercises/custom-gray-chest-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000043",
+    "name": "Máquina de pecho asistida con los pies",
+    "group": "Pecho",
+    "image": "assets/exercises/custom-foot-assisted-chest-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000044",
+    "name": "Contractor de pecho normal",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-pec-deck.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000045",
+    "name": "Contractor de pecho con almohadillas",
+    "group": "Pecho",
+    "image": "assets/exercises/custom-padded-pec-deck.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000046",
+    "name": "Press de pecho de pie en polea doble",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-cable-chest-press.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000047",
+    "name": "Flexiones",
+    "group": "Pecho",
+    "image": "assets/exercises/repdb-push-up.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000048",
+    "name": "Jalón en máquina de discos",
+    "group": "Espalda",
+    "image": "assets/exercises/custom-plate-lat-pulldown.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000050",
+    "name": "Remo en el suelo",
+    "group": "Espalda",
+    "image": "assets/exercises/custom-floor-cable-row.png",
+    "usesCable": true,
+    "grips": [
+      "Abierto",
+      "Cerrado",
+      "Neutro",
+      "Supino"
+    ],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000051",
+    "name": "Pullover de pie en polea",
+    "group": "Espalda",
+    "image": "assets/exercises/repdb-straight-arm-pulldown.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000052",
+    "name": "Dominadas",
+    "group": "Espalda",
+    "image": "assets/exercises/repdb-pull-up.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000053",
+    "name": "Remo con mancuerna",
+    "group": "Espalda",
+    "image": "assets/exercises/repdb-single-arm-db-row.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000054",
+    "name": "Remo",
+    "group": "Espalda",
+    "image": "assets/exercises/repdb-seated-cable-row.png",
+    "usesCable": false,
+    "grips": [
+      "Abierto",
+      "Cerrado",
+      "Neutro",
+      "Supino"
+    ],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000055",
+    "name": "Encogimientos de trapecio en máquina",
+    "group": "Espalda",
+    "image": "assets/exercises/repdb-plate-loaded-shrug.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000056",
+    "name": "Encogimientos de trapecio con mancuernas",
+    "group": "Espalda",
+    "image": "assets/exercises/repdb-db-shrug.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000057",
+    "name": "Escena Spiderman",
+    "group": "Espalda",
+    "image": "assets/exercises/custom-spiderman-cables.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000058",
+    "name": "Elevaciones laterales en máquina",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-plate-loaded-lateral-raise.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000059",
+    "name": "Press militar con mancuernas",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-arnold-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000060",
+    "name": "Press militar en máquina",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-machine-shoulder-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000061",
+    "name": "Press militar con barra olímpica",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-seated-barbell-overhead-press.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000062",
+    "name": "Face pull",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-face-pull.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000063",
+    "name": "Elevación frontal con mancuerna",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-dumbbell-front-raise.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000064",
+    "name": "Elevación frontal con disco",
+    "group": "Hombro",
+    "image": "assets/exercises/custom-plate-front-raise.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000065",
+    "name": "Elevación frontal con barra recta",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-barbell-front-raise.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000066",
+    "name": "Elevación frontal en polea con cuerda",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-cable-front-raise.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000067",
+    "name": "Pájaros con mancuernas en banco inclinado",
+    "group": "Hombro",
+    "image": "assets/exercises/custom-incline-reverse-fly.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000068",
+    "name": "Deltoide posterior en máquina",
+    "group": "Hombro",
+    "image": "assets/exercises/repdb-machine-reverse-fly.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000069",
+    "name": "Extensión de cuádriceps con discos",
+    "group": "Pierna",
+    "image": "assets/exercises/custom-plate-leg-extension.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000070",
+    "name": "Hacka",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-hack-squat.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000071",
+    "name": "Peso muerto de isquios en Smith",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-smith-machine-rdl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000072",
+    "name": "Curl femoral sentado",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-seated-leg-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000073",
+    "name": "Curl femoral tumbado",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-leg-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000074",
+    "name": "Aductores en máquina (Cerrar)",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-hip-adduction.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000075",
+    "name": "Gemelos en máquina",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-machine-calf-raise.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000076",
+    "name": "Gemelos con discos",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-seated-calf-raise.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000077",
+    "name": "Zancadas caminando",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-db-lunge.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000078",
+    "name": "Zancadas estáticas",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-dumbbell-split-squat.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000079",
+    "name": "Curl martillo con mancuernas",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-hammer-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000080",
+    "name": "Curl martillo en polea",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-cable-hammer-curl.png",
+    "usesCable": true,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000081",
+    "name": "Curl Bayesian martillo en banco inclinado",
+    "group": "Bíceps",
+    "image": "assets/exercises/repdb-incline-hammer-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000082",
+    "name": "Curl femoral máquina de discos",
+    "group": "Pierna",
+    "image": null,
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000084",
+    "name": "Remo en máquina con apoyo de pecho",
+    "group": "Espalda",
+    "image": "assets/exercises/repdb-chest-supported-machine-row.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000085",
+    "name": "Rodillo de muñeca",
+    "group": "Antebrazo",
+    "image": "assets/exercises/repdb-wrist-roller.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000086",
+    "name": "Curl de muñeca inverso con mancuerna",
+    "group": "Antebrazo",
+    "image": "assets/exercises/repdb-db-reverse-wrist-curl.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000087",
+    "name": "Press francés con barra Z",
+    "group": "Tríceps",
+    "image": "assets/exercises/repdb-ez-bar-lying-tricep-extension.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000088",
+    "name": "Encogimientos de trapecio con barra por detrás",
+    "group": "Espalda",
+    "image": "assets/exercises/repdb-behind-the-back-barbell-shrug.png",
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000089",
+    "name": "Spider curl",
+    "group": "Bíceps",
+    "image": null,
+    "usesCable": false,
+    "grips": [],
+    "updatedAt": "2026-11-01T00:00:00Z",
+    "deleted": false
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000083",
+    "name": "Hacka con goma",
+    "group": "Pierna",
+    "image": "assets/exercises/repdb-hack-squat.png",
+    "usesCable": false,
+    "grips": [],
+    "deleted": true,
+    "updatedAt": "2026-11-01T00:00:00Z"
+  }
+]

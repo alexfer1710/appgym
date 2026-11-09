@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+*.xcappdata/
+*.xcarchive/
+backups/
+private/
+coverage/
