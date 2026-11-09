@@ -1,4 +1,6 @@
-# Gym11
+# Gym11 · appgym
+
+App de pesos del Gym Eleven.
 
 PWA móvil para registrar entrenamientos de pesas, consultar el historial y proponer cargas a partir de los registros anteriores. HTML, CSS y JavaScript sin dependencias de ejecución, build ni backend.
 
