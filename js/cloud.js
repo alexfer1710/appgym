@@ -9,7 +9,8 @@ const read=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch{ret
 const write=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch{}};
 let timer=null, running=null, listeners=[], paused=false;
 
-export const profile=()=>read(KEY);
+// v2 = "nombre + inicial" profiles; older stored profiles must log in again.
+export const profile=()=>{const p=read(KEY);return p?.v===2?p:null;};
 export const state=()=>read(STATE)||{};
 const setState=patch=>{write(STATE,{...state(),...patch});listeners.forEach(f=>f());};
 export const onStatus=f=>listeners.push(f);
@@ -24,10 +25,9 @@ async function api(path,options={}){
 }
 const base=()=>`profiles/${encodeURIComponent(profile().id)}/backups`;
 
-export async function login(first,last){
- const name=`${first} ${last}`.trim();
+export async function login(name){
  const res=await api('login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name})});
- write(KEY,res.profile);write(STATE,{});
+ write(KEY,{...res.profile,v:2});write(STATE,{});
  return res;
 }
 

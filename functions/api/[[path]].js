@@ -1,7 +1,7 @@
 // Gym11 cloud backups (Cloudflare Pages Functions + KV binding "BACKUPS").
 //
-// Profiles are identified only by "nombre apellido" (no password): any new name
-// creates its profile. Backups are append-only snapshots so nothing a client
+// Profiles are identified only by "nombre + inicial del apellido" (no password):
+// any new name creates its profile. Backups are append-only snapshots so nothing a client
 // uploads can overwrite or delete an earlier copy.
 //
 // KV keys:
@@ -18,17 +18,19 @@ const json = (body, status = 200) =>
   });
 const fail = (message, status = 400) => json({ error: message }, status);
 
+// Profiles are "first name + surname initial" ("Alex F"). A full surname
+// ("Alex Fernández") maps to the same profile.
 export function normalizeName(raw) {
-  const clean = String(raw ?? '').normalize('NFC').replace(/\s+/g, ' ').trim();
+  const clean = String(raw ?? '').normalize('NFC').replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim();
   const words = clean.split(' ').filter(Boolean);
-  if (words.length < 2) throw new Error('Escribe tu nombre y tu apellido.');
-  if (clean.length > 80) throw new Error('El nombre es demasiado largo.');
-  const id = clean
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  if (!ID_RE.test(id)) throw new Error('Usa solo letras y números en el nombre.');
-  const cap = w => w.charAt(0).toLocaleUpperCase('es') + w.slice(1);
-  return { id, name: words.map(cap).join(' '), firstName: cap(words[0]) };
+  if (words.length < 2) throw new Error('Escribe tu nombre y la inicial de tu apellido, por ejemplo «Alex F».');
+  if (words[0].length > 30) throw new Error('El nombre es demasiado largo.');
+  const slug = w => w.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const first = slug(words[0]), initial = slug(words[1]).charAt(0);
+  if (!first || !initial) throw new Error('Usa solo letras en el nombre.');
+  const cap = w => w.charAt(0).toLocaleUpperCase('es') + w.slice(1).toLocaleLowerCase('es');
+  const firstName = cap(words[0]);
+  return { id: `${first}-${initial}`, name: `${firstName} ${words[1].charAt(0).toLocaleUpperCase('es')}.`, firstName };
 }
 
 async function getProfile(env, id) {

@@ -63,7 +63,7 @@ La sesión activa se guarda tras cada cambio. El cronómetro utiliza marcas de t
 
 ## Perfiles y copias en la nube
 
-Al abrir la app por primera vez se pide nombre y apellido (sin contraseña). Cualquier nombre nuevo crea su perfil; mayúsculas y acentos no cuentan. Los datos siguen guardándose en el iPhone y la app funciona sin conexión; cada cambio guardado sube una copia a Cloudflare cuando hay internet.
+Al abrir la app por primera vez se pide el nombre y la inicial del apellido, por ejemplo «Alex F» (sin contraseña). Cualquier nombre nuevo crea su perfil; mayúsculas, acentos y el resto del apellido no cuentan («Alex Fernández» entra en «Alex F»). Los datos siguen guardándose en el iPhone y la app funciona sin conexión; cada cambio guardado sube una copia a Cloudflare cuando hay internet.
 
 - `functions/api/[[path]].js`: API en Cloudflare Pages Functions. `POST /api/login`, `GET|POST /api/profiles/<id>/backups`, `GET /api/profiles/<id>/backups/<fecha|latest>`.
 - Las copias se guardan en Workers KV (binding `BACKUPS`: `gym11-backups` en producción, `gym11-backups-preview` en previsualizaciones). Cada copia es una entrada nueva; nunca se sobrescriben.
