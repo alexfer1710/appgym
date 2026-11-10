@@ -61,6 +61,21 @@ También puedes utilizar una subida directa de los archivos estáticos. Publicar
 
 La sesión activa se guarda tras cada cambio. El cronómetro utiliza marcas de tiempo para reconstruirse al volver de bloquear la pantalla. La app solicita almacenamiento persistente; Safari decide si lo concede. Guarda copias JSON en Archivos periódicamente.
 
+## Perfiles y copias en la nube
+
+Al abrir la app por primera vez se pide nombre y apellido (sin contraseña). Cualquier nombre nuevo crea su perfil; mayúsculas y acentos no cuentan. Los datos siguen guardándose en el iPhone y la app funciona sin conexión; cada cambio guardado sube una copia a Cloudflare cuando hay internet.
+
+- `functions/api/[[path]].js`: API en Cloudflare Pages Functions. `POST /api/login`, `GET|POST /api/profiles/<id>/backups`, `GET /api/profiles/<id>/backups/<fecha|latest>`.
+- Las copias se guardan en Workers KV (binding `BACKUPS`: `gym11-backups` en producción, `gym11-backups-preview` en previsualizaciones). Cada copia es una entrada nueva; nunca se sobrescriben.
+- `js/cloud.js`: perfil, copia automática, recuperar y cerrar sesión. Cerrar sesión sube una copia y vacía el dispositivo.
+- Al entrar en un móvil vacío se recupera la última copia. Desde **Ajustes → Recuperar una copia** se puede volver a cualquier copia anterior.
+
+Para probar en local con KV simulado:
+
+```sh
+npx wrangler@4 pages dev . --kv BACKUPS
+```
+
 ## Exportar e importar
 
 En **Ajustes → Exportar copia JSON** se guardan catálogo, entrenos, preferencias y sesión activa. El importador muestra las cantidades antes de confirmar y evita duplicados por identificador. La opción de reemplazar permite actualizar explícitamente entrenos que ya existan.
