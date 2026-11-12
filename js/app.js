@@ -238,7 +238,6 @@ function renderSettings(){
  const p=cloud.profile();
  show(`<h1>Ajustes</h1>
 ${p?section('Tu perfil',`<div class="row"><span class="badge-icon blue">${esc(p.firstName.charAt(0))}</span><span class="grow"><strong>${esc(p.name)}</strong><small id="cloud-status">${esc(cloudText())}</small></span></div><button type="button" class="row" data-action="restore-list"><span class="row-label">Recuperar una copia anterior</span>${chevron()}</button>${btn('Cerrar sesión','logout','row danger')}`,'Tus datos se sincronizan solos: entrando con tu nombre ves lo mismo en cualquier dispositivo. Sin internet puedes seguir usándola y los cambios se suben al volver la conexión.'):''}
-${waitingWorker?section('Actualización',`<button type="button" class="row action" data-action="update">${icon('check-circle')}Actualizar ahora</button>`,'Hay una versión nueva de Gym11 lista para instalar.'):''}
 ${section('Copias en archivo',`<button type="button" class="row" data-action="export"><span class="row-label">Exportar copia JSON</span>${chevron()}</button><label class="row"><span class="row-label">Importar copia…</span>${chevron()}<input type="file" id="import" accept=".json,application/json" hidden></label>`,'La importación se confirma antes de guardar y evita duplicados. También acepta la exportación de la app de Swift y el histórico de Notas.')}
 ${section('Esta app',`<div class="row"><span class="row-label">Sin conexión</span><small class="muted" id="offline-status">Comprobando…</small></div><button type="button" class="row" data-action="persist"><span class="row-label">Almacenamiento protegido</span><small class="muted">${persisted?'Concedido':'Solicitar'}</small></button><a class="row" href="https://repdb.co" target="_blank" rel="noopener"><span class="row-label">Ilustraciones de RepDB</span>${chevron()}</a>`,'Para instalarla: Safari → Compartir → Añadir a pantalla de inicio.')}`);
  checkOffline();
@@ -317,7 +316,7 @@ async function action(a){
  if(a==='restore-list'){const list=await cloud.listBackups();if(!list.length){toast('Todavía no hay copias en la nube.');return;}openDialog(`<header class="sheet-bar"><span></span><h2>Recuperar una copia</h2>${btn('Cerrar','close','link strong')}</header><p class="footnote">Elige una copia para volver a ese momento. Se sustituirán los datos actuales en todos tus dispositivos; la versión de ahora se conserva en esta lista.</p><div class="list">${list.slice(0,30).map(b=>`<button type="button" class="row" data-action="restore:${esc(b.at)}"><span class="grow"><strong>${esc(date(b.at))} · ${clock(b.at)}</strong>${b.sessions!=null?`<small>${plural(b.sessions,'entreno','entrenos')}</small>`:''}</span>${chevron()}</button>`).join('')}</div>`);return;}
  if(a.startsWith('restore:')){if(draft){toast('Termina o descarta la sesión antes de recuperar una copia.');return;}if(!confirm('¿Sustituir tus datos por esa copia?'))return;const n=await cloud.restore(a.slice(8));close();await load();tab='home';view=null;toast(`Copia recuperada: ${plural(n,'entreno','entrenos')}.`);render();return;}
  if(a==='logout'){if(draft){toast('Termina o descarta la sesión antes de cerrar sesión.');return;}if(!confirm('Tus datos quedan guardados en la nube y se borrarán de este dispositivo. Podrás recuperarlos entrando con tu nombre. ¿Cerrar sesión?'))return;await cloud.logout();await load();tab='home';view=null;renderLogin();return;}
- if(a==='update'){if(draft){toast('Termina o descarta la sesión antes de actualizar.');return;}waitingWorker?.postMessage({type:'SKIP_WAITING'});return;}
+ if(a==='update'){await saveSelection();const b=document.querySelector('#update button');if(b){b.disabled=true;b.textContent='Actualizando…';}if(waitingWorker)waitingWorker.postMessage({type:'SKIP_WAITING'});else location.reload();return;}
 }
 async function handleChange(el){
  if(el.id==='import'){const file=el.files[0];if(!file)return;if(file.size>80*1024*1024)throw new Error('La copia supera 80 MB.');pendingImport=await prepareImport(JSON.parse(await file.text()));openDialog(`<header class="sheet-bar">${btn('Cancelar','close','link')}<h2>Importar copia</h2>${btn('Importar','confirm-import','link strong')}</header><div class="list"><div class="row"><span class="row-label">Contenido</span><small class="muted">${plural(pendingImport.sessions.length,'entreno','entrenos')} · ${pendingImport.exercises.length} ejercicios</small></div><label class="row"><span class="row-label">Reemplazar los repetidos</span>${toggle('overwrite',false,'overwrite')}</label></div><p class="footnote">Desactivado: se conservan los entrenos que ya tienes con el mismo identificador.</p>`);return;}
@@ -397,5 +396,24 @@ document.addEventListener('input',e=>{if(e.target.id==='weight')fitWeight();if(e
 modal.addEventListener('submit',e=>{e.preventDefault();safe(()=>submit(e.target));});
 
 async function checkOffline(){const el=document.querySelector('#offline-status');if(!el)return;let ready=false;for(const name of await caches.keys())if(name.startsWith('gym11-')){const cache=await caches.open(name);if(await cache.match(new URL('./offline-ready',location.href)))ready=true;}if(document.querySelector('#offline-status'))document.querySelector('#offline-status').textContent=ready?'Lista':'Preparando…';}
-async function registerWorker(){if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.register('./sw.js');const found=()=>{if(reg.waiting){waitingWorker=reg.waiting;toast('Nueva versión disponible. Puedes actualizar desde Ajustes.');if(tab==='settings'&&!view)render();}};found();reg.addEventListener('updatefound',()=>reg.installing?.addEventListener('statechange',found));let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});navigator.serviceWorker.addEventListener('message',()=>checkOffline());reg.update().catch(()=>{});}
+// A new version must be installed before carrying on: a floating window with one button.
+// The workout in progress is saved in IndexedDB and the screen is restored after the reload.
+function showUpdate(){
+ let box=document.querySelector('#update');
+ if(!box){box=document.createElement('dialog');box.id='update';box.className='alert';box.addEventListener('cancel',e=>e.preventDefault());document.body.append(box);}
+ box.innerHTML=`<span class="alert-icon">${icon('check-circle')}</span><h2>Hemos actualizado Gym11</h2><p>Hay una versión nueva de la app. Actualiza para seguir; tus datos${draft?' y el entreno en curso':''} se conservan.</p><button type="button" class="primary" data-action="update">Actualizar</button>`;
+ if(!box.open)box.showModal();
+}
+async function registerWorker(){
+ if(!('serviceWorker'in navigator))return;
+ const reg=await navigator.serviceWorker.register('./sw.js');
+ const found=()=>{if(reg.waiting&&navigator.serviceWorker.controller){waitingWorker=reg.waiting;showUpdate();}};
+ found();
+ reg.addEventListener('updatefound',()=>reg.installing?.addEventListener('statechange',found));
+ let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
+ navigator.serviceWorker.addEventListener('message',()=>checkOffline());
+ // Look for new versions on start and whenever the app comes back to the foreground.
+ reg.update().catch(()=>{});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update().catch(()=>{});});
+}
 safe(async()=>{await db.init();await load();layout=(await db.get('settings','layout'))?.value||'grid';if(cloud.profile()){restorePlace();render();cloud.flush();}else renderLogin();persisted=(await db.persistence()).persistent;await registerWorker().catch(e=>console.warn('Service worker:',e));});
