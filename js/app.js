@@ -102,6 +102,17 @@ function render(){
 /* ---------- home ---------- */
 const miniBars=(counts,color)=>`<div class="minibars">${counts.map((c,i)=>`<i style="height:${c?9+Math.min(c,3)*5:6}px;${c?`background:${color};opacity:${(.55+i*.06).toFixed(2)}`:''}"></i>`).join('')}</div>`;
 function sessionCard(s){return `<button type="button" class="card session" data-session="${esc(s.id)}"><span class="session-top">${s.groups.map(g=>muscleIcon(g)).join('')}<strong>${esc(s.groups.join(' + ')||s.historicalTitle||'Entreno')}</strong><small>${shortDate(s.date)}</small></span><span class="session-bottom"><small>${plural(s.entries.length,'ejercicio','ejercicios')}${minutes(s)?` · ${minutes(s)} min efectivos`:''}</small>${chevron()}</span></button>`;}
+// One useful sentence for the home cover: the workout in progress, what was done today,
+// or the main group that has gone longest without training.
+const listJoin=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' y '+a.at(-1);
+function homeLead(done,today){
+ if(draft)return [`Tienes un entreno a medias: ${listJoin(draft.groups.map(g=>g.toLowerCase()))}.`,''];
+ const todays=done.filter(s=>dayKey(s.date)===today);
+ if(todays.length)return [`Hoy ya has entrenado ${listJoin([...new Set(todays.flatMap(s=>s.groups))].map(g=>g.toLowerCase()))}.`,'Buen trabajo.'];
+ const since=g=>{const s=lastFor(g);return s?Math.round((new Date(today)-new Date(dayKey(s.date)))/86400000):Infinity;};
+ const g=[...MAIN_GROUPS].sort((a,b)=>since(b)-since(a))[0],d=since(g);
+ return [`Hoy toca ${g.toLowerCase()}.`,d===Infinity?'Todavía no lo has entrenado.':d===1?'Lo entrenaste ayer.':`Hace ${d} días que no lo entrenas.`];
+}
 function renderHome(){
  const now=new Date(),today=dayKey(now),start=new Date(now.getFullYear(),now.getMonth(),now.getDate());
  const done=sessions.filter(s=>s.entries.length||s.historicalTitle),days=new Set(done.map(s=>dayKey(s.date)));
@@ -113,14 +124,15 @@ function renderHome(){
  const daily=Array.from({length:8},(_,i)=>done.filter(s=>dayKey(s.date)===dayKey(addDays(start,i-7))).length);
  const monthLength=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),latest=done[0];
  const name=cloud.profile()?.firstName;
- show(`<header class="hero"><img src="assets/home-hero.jpg" alt=""><div class="hero-text"><div class="eyebrow">${esc(now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}))}</div><h1>${name?`Hola, ${esc(name)}`:'Hoy toca entrenar'}</h1><p>Disciplina hoy<br>para un mejor mañana.</p></div></header>
+ const dateText=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}),[lead,note]=homeLead(done,today);
+ show(`<header class="cover"><p class="cover-date">${esc(dateText.charAt(0).toUpperCase()+dateText.slice(1))}</p><h1>${name?`Hola, ${esc(name)}.`:'Hola.'}</h1><p class="cover-lead">${esc(lead)}</p>${note?`<p class="cover-note">${esc(note)}</p>`:''}</header>
 <div class="home-panel">
 <section class="week card raised" aria-label="Esta semana">${['L','M','X','J','V','S','D'].map((letter,i)=>{const k=dayKey(addDays(monday,i)),isToday=k===today,isDone=days.has(k);return `<div class="${isToday?'today':''}"><small>${letter}</small><span class="dot ${isDone?'done':''}">${isDone?icon('check'):isToday?letter:''}</span></div>`;}).join('')}</section>
-<button type="button" class="card month" data-tab="history"><span class="between"><strong>Tu actividad este mes</strong>${chevron()}</span><span class="monthbars">${Array.from({length:monthLength},(_,i)=>{const c=perDay.get(dayKey(new Date(now.getFullYear(),now.getMonth(),i+1)))||0;return `<i class="${c?'on':''}" style="height:${c?Math.min(54,15+c*7):7}px"></i>`;}).join('')}</span><span class="between muted"><small>1</small><small>${esc(now.toLocaleDateString('es-ES',{month:'long'}))}</small><small>${monthLength}</small></span></button>
 <button type="button" class="primary" data-action="${draft?'resume':'start'}">${icon('play')}${draft?'Continuar entrenamiento':'Empezar entrenamiento'}</button>
+<button type="button" class="card month" data-tab="history"><span class="between"><strong>Tu actividad este mes</strong>${chevron()}</span><span class="monthbars">${Array.from({length:monthLength},(_,i)=>{const c=perDay.get(dayKey(new Date(now.getFullYear(),now.getMonth(),i+1)))||0;return `<i class="${c?'on':''}" style="height:${c?Math.min(54,15+c*7):7}px"></i>`;}).join('')}</span><span class="between muted"><small>1</small><small>${esc(now.toLocaleDateString('es-ES',{month:'long'}))}</small><small>${monthLength}</small></span></button>
 <div class="stats"><div class="card raised stat"><span class="badge-icon blue">${icon('dumbbell')}</span><b>${fourWeeks}</b><strong>entrenos</strong><small>últimas 4 semanas</small>${miniBars(weekly,'var(--accent)')}</div><div class="card raised stat"><span class="badge-icon orange">${icon('flame')}</span><b>${streak}</b><strong>${streak===1?'día':'días'}</strong><small>racha actual</small>${miniBars(daily,'var(--orange)')}</div></div>
 ${latest?`<button type="button" class="card last" data-session="${esc(latest.id)}"><span class="badge-icon blue big">${icon('history')}</span><span class="grow"><small>Último entreno</small><strong>${esc(latest.groups.join(' + ')||latest.historicalTitle||'Entreno')}</strong><small>${esc(longDate(latest.date))}</small></span>${chevron()}</button>`:''}
-</div>`,{cls:'flush'});
+</div>`,{cls:'home-page'});
 }
 
 /* ---------- workout: muscle group ---------- */
