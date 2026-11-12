@@ -1,5 +1,5 @@
 import * as db from './db.js';
-import {groups,uid,num,repsText,dayKey,suggestWeight,antecedents,canWarmup,recentExercises,excludedIDs} from './model.js';
+import {groups,uid,num,repsText,dayKey,suggestWeight,antecedents,recentExercises,unilateralMode} from './model.js';
 import {exportData,prepareImport,importData} from './transfer.js';
 import * as cloud from './cloud.js';
 import {icon,muscleIcon} from './icons.js';
@@ -159,7 +159,7 @@ function renderLibrary(mode){
 }
 async function choose(id){
  const exercise=exercises.find(e=>e.id===id);
- selection={exercise,grip:exercise.grips[0]||null,cableStation:'sala1',weight:0,sets:4,reps:exercise.name.startsWith('Curl 15')?15:exercise.name.startsWith('Curl 21')?21:10,toFailure:false,unilateral:exercise.name==='Extensión unilateral con strap',isWarmup:false,dropset:false};
+ selection={exercise,grip:exercise.grips[0]||null,cableStation:'sala1',weight:0,sets:4,reps:exercise.name.startsWith('Curl 15')?15:exercise.name.startsWith('Curl 21')?21:10,toFailure:false,unilateral:unilateralMode(exercise)==='always',dropset:false};
  selection.weight=suggestWeight(sessions,exercise,selection.grip);
  view=exercise.grips.length>1?'grip':'setup';await saveSelection();render();
 }
@@ -167,7 +167,7 @@ async function choose(id){
 /* ---------- workout: grip, setup, active, rating ---------- */
 function renderGrip(){const e=selection.exercise;show(`${topbar(back('Ejercicios','select'))}<h1>${e.name==='Press francés'?'Elige equipo':'Elige agarre'}</h1><p class="muted sub">${esc(e.name)}</p><div class="stack">${e.grips.map(g=>`<button type="button" class="card grip" data-action="grip:${esc(g)}"><strong>${esc(g)}</strong>${icon('arrow-right','muted')}</button>`).join('')}</div>`,{bar:false});}
 function priorCard(){
- const e=selection.exercise,excluded=excludedIDs(sessions),prior=antecedents(sessions,e,selection.grip,selection.cableStation),last=prior.find(p=>p.weight>0&&!excluded.has(p.id))||prior[0];
+ const e=selection.exercise,prior=antecedents(sessions,e,selection.grip,selection.cableStation),last=prior.find(p=>p.weight>0)||prior[0];
  if(!last)return `<div class="card prior static"><small class="muted">Sin registros previos. Ajusta tu peso inicial.</small></div>`;
  return `<button type="button" class="card prior" data-action="prior"><span class="between"><small class="muted with-icon">${icon('history')}Última sesión registrada</small><strong>${num(last.weight)} kg · ${repsText(last)}</strong></span><span class="between"><small class="muted">Posición</small><small class="accent">${last.order}.º de ${esc(last.exercise.group.toLowerCase())}${last.feeling?' · '+esc(last.feeling):''}</small></span><span class="between"><small class="muted">Toca para ver sesiones anteriores</small>${chevron()}</span></button>`;
 }
@@ -176,33 +176,34 @@ function renderSetup(){
  const customSets=![3,4,5].includes(selection.sets),customReps=!selection.toFailure&&![6,8,10,12].includes(selection.reps);
  show(`<div class="setup-photo">${e.image?`<img src="${esc(e.image)}" alt="">`:muscleIcon(e.group)}<div class="float-bar">${iconBtn('chevron-left','select','Volver a los ejercicios')}</div><span class="pill">${icon('dumbbell')}${esc(e.group)}</span></div>
 <div class="pad">
-<div class="setup-head"><div class="grow"><h1>${esc(e.name)}</h1>${selection.grip?`<button type="button" class="link grip-link" data-action="${e.grips.length>1?'regrip':'noop'}">Agarre: ${esc(selection.grip)}${e.grips.length>1?' · Cambiar':''}</button>`:''}</div><label class="mini-toggle"><small>Unilateral</small>${toggle('unilateral',selection.unilateral,'unilateral')}</label></div>
+<div class="setup-head"><div class="grow"><h1>${esc(e.name)}</h1>${selection.grip?`<button type="button" class="link grip-link" data-action="${e.grips.length>1?'regrip':'noop'}">Agarre: ${esc(selection.grip)}${e.grips.length>1?' · Cambiar':''}</button>`:''}</div>${unilateralMode(e)==='optional'?`<label class="mini-toggle"><small>Unilateral</small>${toggle('unilateral',selection.unilateral,'unilateral')}</label>`:unilateralMode(e)==='always'?'<span class="tag">Unilateral</span>':''}</div>
 ${e.usesCable?`<section class="card block"><div class="caption">Polea</div>${segButtons(STATIONS.map(([v,l])=>['station:'+v,l,selection.cableStation===v]))}</section>`:''}
 <section class="card block"><div class="between caption"><span>Series objetivo</span><span class="plain">${plural(selection.sets,'serie programada','series programadas')}</span></div><div class="choices">${[3,4,5].map(n=>btn(n,'sets:'+n,selection.sets===n?'on':'')).join('')}${btn(customSets?selection.sets:'Otro','custom:sets',customSets?'on':'')}</div></section>
 <section class="card block"><div class="caption">Repeticiones por serie</div>${fixed?`<strong>${fixed} repeticiones · ${fixed===15?'5 + 5 + 5':'7 + 7 + 7'}</strong>`:`<div class="choices">${[6,8,10,12].map(n=>btn(`${n}<small>reps</small>`,'reps:'+n,!selection.toFailure&&selection.reps===n?'on':'')).join('')}${btn(customReps?`${selection.reps}<small>reps</small>`:'Otro','custom:reps',customReps?'on':'')}</div><div class="choices">${btn('Al fallo','failure',selection.toFailure?'on':'')}</div>`}</section>
-<section class="list"><label class="row"><span class="row-label">Dropset</span>${toggle('dropset',selection.dropset,'dropset')}</label>${canWarmup(sessions,draft)?`<label class="row"><span class="row-label">Calentamiento / fatiga previa</span>${toggle('warmup',selection.isWarmup,'warmup')}</label>`:''}</section>${canWarmup(sessions,draft)?`<p class="footnote">Si lo activas, los siguientes ejercicios de ${esc(e.group.toLowerCase())} de hoy no se usarán como referencia de peso. Este primer ejercicio sí contará.</p>`:''}
+<section class="list"><label class="row"><span class="row-label">Dropset</span>${toggle('dropset',selection.dropset,'dropset')}</label></section>
 ${priorCard()}</div>`,{bar:false,cls:'flush',footer:`<button type="button" class="primary" data-action="begin">Empezar ejercicio${icon('play')}</button>`});
 }
 function renderActive(){
- const e=selection.exercise,detail=[selection.grip,e.usesCable?'Polea · '+stationName(selection.cableStation):null].filter(Boolean).join(' · ');
+ const e=selection.exercise,uni=unilateralMode(e)==='always'||(unilateralMode(e)==='optional'&&selection.unilateral),detail=[selection.grip,e.usesCable?'Polea · '+stationName(selection.cableStation):null,uni?'Unilateral':null,selection.dropset?'Dropset':null].filter(Boolean).join(' · ');
  show(`${topbar(back('Ajustes del ejercicio','setup'))}<div class="active-view"><div class="timer" id="timer" aria-label="Tiempo efectivo">0:00</div><h1>${esc(e.name)}</h1>${detail?`<small class="muted">${esc(detail)}</small>`:''}<p class="muted">${plural(selection.sets,'serie','series')} · ${selection.toFailure?'al fallo':selection.reps+' repeticiones'}</p>
 <div class="weight"><div class="col">${[5,1,.25].map(n=>btn('+'+num(n),'weight:'+n)).join('')}</div><label class="weight-value"><input id="weight" inputmode="decimal" value="${num(selection.weight)}" aria-label="Peso en kilos"><span>kg</span></label><div class="col">${[5,1,.25].map(n=>btn('−'+num(n),'weight:'+(-n))).join('')}</div></div></div>${priorCard()}`,
  {bar:false,footer:`<button type="button" class="primary check" data-action="rate" aria-label="Terminar ejercicio">${icon('check')}</button>`});
- updateTimer();
+ updateTimer();fitWeight();
 }
+function fitWeight(){const el=document.querySelector('#weight');if(!el)return;const probe=fitWeight.probe||=Object.assign(document.createElement('span'),{className:'weight-probe'});if(!probe.isConnected)document.body.append(probe);el.style.fontSize='';const cs=getComputedStyle(el);for(const k of ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','fontVariantNumeric'])probe.style[k]=cs[k];probe.textContent=el.value||'0';let width=probe.getBoundingClientRect().width+4;const room=el.parentElement.clientWidth-(el.nextElementSibling?.offsetWidth||0)-8;el.style.fontSize='';if(width>room){const size=parseFloat(cs.fontSize)*room/width;el.style.fontSize=size+'px';width=room;}el.style.width=Math.ceil(width)+'px';}
 function updateTimer(){const el=document.querySelector('#timer');if(el&&selection?.started){const sec=Math.max(0,Math.floor((Date.now()-selection.started)/1000));el.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}}
 setInterval(updateTimer,1000);
 function renderRating(){show(`<div class="rating"><button type="button" class="icon-btn white" data-action="active" aria-label="Volver al ejercicio">${icon('chevron-left')}</button><div class="rating-body"><h1>¿Qué tal el peso?</h1><p class="muted">${esc(selection.exercise.name)} · ${num(selection.weight)} kg</p>${[['Fácil','smile','easy'],['Perfecto','check-circle','perfect'],['Demasiado','alert-circle','hard']].map(([f,ic,cls])=>`<button type="button" class="mood ${cls}" data-action="feeling:${f}">${icon(ic)}${f}</button>`).join('')}</div></div>`,{bar:false});}
 function showPrior(){
- const e=selection.exercise,excluded=excludedIDs(sessions),prior=antecedents(sessions,e,selection.grip,selection.cableStation);
- openDialog(`<header class="sheet-bar"><span></span><h2>Anteriores</h2>${btn('Listo','close','link strong')}</header><div class="list">${prior.map(p=>`<div class="row tall"><span class="grow"><strong>${p.weight>0?num(p.weight)+' kg':'Peso sin anotar'}</strong><small>${[p.toFailure||p.reps?repsText(p):null,`${p.order}.º de ${esc(p.exercise.group.toLowerCase())}`,p.feeling?esc(p.feeling):null].filter(Boolean).join(' · ')}</small>${p.isWarmup?'<small>Calentamiento · conserva su referencia de peso</small>':''}${excluded.has(p.id)?'<small>Fatiga previa · no usado como referencia de peso</small>':''}</span><small class="muted">${shortDate(p.date)}</small></div>`).join('')}</div>`);
+ const e=selection.exercise,prior=antecedents(sessions,e,selection.grip,selection.cableStation);
+ openDialog(`<header class="sheet-bar"><span></span><h2>Anteriores</h2>${btn('Listo','close','link strong')}</header><div class="list">${prior.map(p=>`<div class="row tall"><span class="grow"><strong>${p.weight>0?num(p.weight)+' kg':'Peso sin anotar'}</strong><small>${[p.toFailure||p.reps?repsText(p):null,`${p.order}.º de ${esc(p.exercise.group.toLowerCase())}`,p.feeling?esc(p.feeling):null].filter(Boolean).join(' · ')}</small></span><small class="muted">${shortDate(p.date)}</small></div>`).join('')}</div>`);
 }
 function numberSheet(kind){const reps=kind==='reps';openDialog(`<form id="number-form">${sheetBar(reps?'Repeticiones por serie':'Series','Listo')}<input type="hidden" name="kind" value="${kind}"><div class="big-stepper">${stepper('value',selection[kind]||(reps?10:4),1,reps?100:20)}<small class="muted">${reps?'repeticiones':'series'}</small></div></form>`);}
 
 /* ---------- sessions ---------- */
 function entryRow(e){
  const ex=exercises.find(x=>x.id===e.exercise.id)||e.exercise,extra=[e.grip,ex.usesCable&&e.cableStation&&e.cableStation!=='sala1'?'Polea · '+stationName(e.cableStation):null,e.unilateral?'Unilateral':null,e.dropset?'Dropset':null].filter(Boolean).join(' · ');
- return `<button type="button" class="row entry" data-edit-entry="${esc(e.id)}">${thumb(ex)}<span class="grow"><strong>${esc(e.exercise.name)}</strong><small>${e.weight?num(e.weight):'—'} kg · ${repsText(e)} · ${e.sets||'—'} series</small>${extra?`<small class="accent">${esc(extra)}</small>`:''}${e.isWarmup?'<small class="accent">Calentamiento / fatiga previa</small>':''}<small class="faint">${[`${e.order}.º de ${esc(e.exercise.group.toLowerCase())}`,e.seconds?Math.round(e.seconds)+' s efectivos':null,e.feeling?esc(e.feeling):null].filter(Boolean).join(' · ')}</small></span>${chevron()}</button>`;
+ return `<button type="button" class="row entry" data-edit-entry="${esc(e.id)}">${thumb(ex)}<span class="grow"><strong>${esc(e.exercise.name)}</strong><small>${e.weight?num(e.weight):'—'} kg · ${repsText(e)} · ${e.sets||'—'} series</small>${extra?`<small class="accent">${esc(extra)}</small>`:''}<small class="faint">${[`${e.order}.º de ${esc(e.exercise.group.toLowerCase())}`,e.seconds?Math.round(e.seconds)+' s efectivos':null,e.feeling?esc(e.feeling):null].filter(Boolean).join(' · ')}</small></span>${chevron()}</button>`;
 }
 function renderSession(id){
  const isDraft=id==='draft',s=isDraft?draft:sessions.find(x=>x.id===id);if(!s){view=null;return render();}
@@ -250,13 +251,14 @@ function entryFields(ex,entry){
  const grip=entry?entry.grip:ex.grips[0]||null,failure=!!entry?.toFailure;
  return `${ex.grips.length||ex.usesCable||entry?.grip?`<div class="list">${ex.grips.length?`<div class="row wrap"><span class="row-label">Agarre</span>${seg('grip',[...new Set([...ex.grips,...(grip?[grip]:[])])].map(g=>[g,g]),grip)}</div>`:entry?row('Agarre o variante',`<input name="grip" value="${esc(entry.grip||'')}" placeholder="Ninguno">`):''}${ex.usesCable?`<div class="row wrap"><span class="row-label">Polea</span>${seg('station',STATIONS,entry?.cableStation||'sala1')}</div>`:''}</div>`:''}
 <div class="list">${row('Peso',`<span class="unit"><input name="weight" inputmode="decimal" required value="${num(entry?entry.weight:suggestWeight(sessions,ex,grip))}"><small>kg</small></span>`)}${row('Series',stepper('sets',entry?entry.sets:4,0,100))}${row('Repeticiones',stepper('reps',entry?entry.reps:10,0,1000,'data-reps',failure?'off':''))}<label class="row"><span class="row-label">Al fallo</span>${toggle('failure',failure)}</label></div>
-<div class="list"><label class="row"><span class="row-label">Unilateral</span>${toggle('unilateral',entry?.unilateral)}</label><label class="row"><span class="row-label">Dropset</span>${toggle('dropset',entry?.dropset)}</label>${entry?row('Tiempo efectivo',`<span class="unit"><input name="seconds" inputmode="numeric" value="${Math.round(entry.seconds||0)}"><small>s</small></span>`):''}</div>
+<div class="list">${unilateralMode(ex)==='optional'?`<label class="row"><span class="row-label">Unilateral</span>${toggle('unilateral',entry?.unilateral)}</label>`:''}<label class="row"><span class="row-label">Dropset</span>${toggle('dropset',entry?.dropset)}</label>${entry?row('Tiempo efectivo',`<span class="unit"><input name="seconds" inputmode="numeric" value="${Math.round(entry.seconds||0)}"><small>s</small></span>`):''}</div>
 <h2 class="section">¿Qué tal el peso?</h2>${seg('feeling',[['','Sin valorar'],...FEELINGS.map(f=>[f,f])],entry?.feeling||'')}`;
 }
 function readEntry(f,ex,old){
  const weight=decimal(f.get('weight')),sets=Number(f.get('sets')),reps=Number(f.get('reps')),seconds=f.has('seconds')?Number(f.get('seconds')):old?.seconds||0;
  if(![weight,sets,reps,seconds].every(n=>Number.isFinite(n)&&n>=0)||!Number.isInteger(sets)||!Number.isInteger(reps)||weight>10000)throw new Error('Revisa el peso, las series y las repeticiones.');
- return {weight,sets,reps:f.has('failure')?0:reps,toFailure:f.has('failure'),unilateral:f.has('unilateral'),dropset:f.has('dropset'),grip:String(f.get('grip')||'').trim()||null,cableStation:ex?.usesCable?(f.get('station')||old?.cableStation||'sala1'):old?.cableStation||null,seconds,feeling:f.get('feeling')||''};
+ const mode=unilateralMode(ex);
+ return {weight,sets,reps:f.has('failure')?0:reps,toFailure:f.has('failure'),unilateral:mode==='always'||(mode==='optional'&&f.has('unilateral')),dropset:f.has('dropset'),grip:String(f.get('grip')||'').trim()||null,cableStation:ex?.usesCable?(f.get('station')||old?.cableStation||'sala1'):old?.cableStation||null,seconds,feeling:f.get('feeling')||''};
 }
 const exerciseOptions=current=>groups.map(g=>{const list=exercises.filter(e=>e.group===g&&(!e.deleted||e.id===current));return list.length?`<optgroup label="${esc(g)}">${list.map(e=>`<option value="${esc(e.id)}" ${e.id===current?'selected':''}>${esc(e.name)}</option>`).join('')}</optgroup>`:'';}).join('');
 function entryEditor(entry){const ex=exercises.find(e=>e.id===entry.exercise.id)||{...entry.exercise,grips:[],usesCable:false};openDialog(`<form id="entry-form">${sheetBar('Editar ejercicio')}<input name="id" type="hidden" value="${esc(entry.id)}"><div class="list">${row('Ejercicio',`<select name="exercise">${exerciseOptions(entry.exercise.id)}</select>`)}</div>${entryFields(ex,entry)}<div class="list">${btn('Quitar ejercicio','remove-entry','row danger center')}</div></form>`);}
@@ -291,7 +293,7 @@ async function action(a){
  if(a==='new-exercise'){exerciseEditor();return;}
  if(a==='edit-exercise'){exerciseEditor(exercises.find(e=>e.id===view.slice(9)));return;}
  if(a==='archive-exercise'){if(confirm('¿Archivar este ejercicio? Sus registros se conservarán.')){const ex=exercises.find(e=>e.id===modal.querySelector('[name=id]').value);await db.put('exercises',{...ex,deleted:true});close();await load();view=null;render();}return;}
- if(a.startsWith('weight:')){selection.weight=Math.max(0,Math.round((selection.weight+Number(a.slice(7)))*100)/100);const input=document.querySelector('#weight');if(input)input.value=num(selection.weight);await saveSelection();return;}
+ if(a.startsWith('weight:')){selection.weight=Math.max(0,Math.round((selection.weight+Number(a.slice(7)))*100)/100);const input=document.querySelector('#weight');if(input){input.value=num(selection.weight);fitWeight();}await saveSelection();return;}
  if(a.startsWith('sets:')){selection.sets=Number(a.slice(5));await saveSelection();render();return;}
  if(a.startsWith('reps:')){selection.reps=Number(a.slice(5));selection.toFailure=false;await saveSelection();render();return;}
  if(a.startsWith('custom:')){numberSheet(a.slice(7));return;}
@@ -300,8 +302,8 @@ async function action(a){
  if(a==='begin'){if(!selection.started)selection.started=Date.now();view='active';await saveSelection();render();return;}
  if(a==='setup'||a==='active'){view=a;await saveSelection();render();return;}
  if(a==='rate'){if(!Number.isFinite(selection.weight)||selection.weight<0)throw new Error('Introduce un peso válido.');selection.ended=Date.now();view='rating';await saveSelection();render();return;}
- if(a.startsWith('feeling:')){const e=selection.exercise,warmup=selection.isWarmup&&canWarmup(sessions,draft);draft.entries.push({id:uid(),exercise:{id:e.id,name:e.name,group:e.group},weight:selection.weight,reps:selection.toFailure?0:selection.reps,sets:selection.sets,toFailure:selection.toFailure,unilateral:selection.unilateral,dropset:selection.dropset,isWarmup:warmup,grip:selection.grip,cableStation:e.usesCable?selection.cableStation:null,seconds:Math.max(0,(selection.ended-selection.started)/1000),feeling:a.slice(8),order:draft.entries.filter(x=>x.exercise.group===e.group).length+1});selection=null;draft.selection=null;draft.phase='select';await saveDraft();view='select';render();return;}
- if(a==='finish-workout'){if(!draft.entries.length){toast('Añade al menos un ejercicio.');return;}if(!confirm('¿Finalizar entreno?\nSe guardarán los ejercicios de esta sesión en tu historial.'))return;const saved={...draft,groups:trainedGroups(draft)};delete saved.selection;delete saved.phase;await db.transaction(['sessions','drafts'],tx=>{tx.objectStore('sessions').put({...saved,updatedAt:new Date().toISOString()});tx.objectStore('drafts').delete('active');});await load();view='session:'+saved.id;tab='history';render();toast('Entreno guardado.');return;}
+ if(a.startsWith('feeling:')){const e=selection.exercise,mode=unilateralMode(e);draft.entries.push({id:uid(),exercise:{id:e.id,name:e.name,group:e.group},weight:selection.weight,reps:selection.toFailure?0:selection.reps,sets:selection.sets,toFailure:selection.toFailure,unilateral:mode==='always'||(mode==='optional'&&selection.unilateral),dropset:selection.dropset,isWarmup:false,grip:selection.grip,cableStation:e.usesCable?selection.cableStation:null,seconds:Math.max(0,(selection.ended-selection.started)/1000),feeling:a.slice(8),order:draft.entries.filter(x=>x.exercise.group===e.group).length+1});selection=null;draft.selection=null;draft.phase='select';await saveDraft();view='select';render();return;}
+ if(a==='finish-workout'){if(!draft.entries.length){toast('Añade al menos un ejercicio.');return;}if(!confirm('¿Finalizar entreno?\nSe guardarán los ejercicios de esta sesión en tu historial.'))return;const saved={...draft,groups:trainedGroups(draft)};delete saved.selection;delete saved.phase;await db.transaction(['sessions','drafts'],tx=>{tx.objectStore('sessions').put({...saved,updatedAt:new Date().toISOString()});tx.objectStore('drafts').delete('active');});await load();selection=null;view=null;tab='history';histDay=null;histMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);render();toast('Entreno guardado.');return;}
  if(a==='discard'){if(confirm('¿Descartar esta sesión sin guardar?')){await db.remove('drafts','active');draft=null;selection=null;view=null;tab='home';render();}return;}
  if(a==='delete-session'){const s=currentSession();if(confirm('¿Eliminar este entreno?\nSe eliminará de tu historial y de las estadísticas. Esta acción no se puede deshacer.')){await db.remove('sessions',s.id);await load();view=null;render();}return;}
  if(a==='new-past'){sessionForm();return;}
@@ -321,8 +323,8 @@ async function handleChange(el){
  if(el.id==='import'){const file=el.files[0];if(!file)return;if(file.size>80*1024*1024)throw new Error('La copia supera 80 MB.');pendingImport=await prepareImport(JSON.parse(await file.text()));openDialog(`<header class="sheet-bar">${btn('Cancelar','close','link')}<h2>Importar copia</h2>${btn('Importar','confirm-import','link strong')}</header><div class="list"><div class="row"><span class="row-label">Contenido</span><small class="muted">${plural(pendingImport.sessions.length,'entreno','entrenos')} · ${pendingImport.exercises.length} ejercicios</small></div><label class="row"><span class="row-label">Reemplazar los repetidos</span>${toggle('overwrite',false,'overwrite')}</label></div><p class="footnote">Desactivado: se conservan los entrenos que ya tienes con el mismo identificador.</p>`);return;}
  if(el.name==='failure'&&el.form){el.form.querySelector('[data-reps]')?.classList.toggle('off',el.checked);return;}
  if(!selection||el.closest('dialog'))return;
- if(el.id==='weight'){const value=decimal(el.value);if(!Number.isFinite(value)||value<0||value>10000){el.value=num(selection.weight);throw new Error('Introduce un peso entre 0 y 10.000 kg.');}selection.weight=value;el.value=num(value);}
- for(const [id,key] of [['unilateral','unilateral'],['dropset','dropset'],['warmup','isWarmup']])if(el.id===id)selection[key]=el.checked;
+ if(el.id==='weight'){const value=decimal(el.value);if(!Number.isFinite(value)||value<0||value>10000){el.value=num(selection.weight);throw new Error('Introduce un peso entre 0 y 10.000 kg.');}selection.weight=value;el.value=num(value);fitWeight();}
+ for(const [id,key] of [['unilateral','unilateral'],['dropset','dropset']])if(el.id===id)selection[key]=el.checked;
  await saveSelection();
 }
 async function submit(form){
@@ -391,7 +393,7 @@ document.addEventListener('click',ev=>{
  });
 });
 document.addEventListener('change',e=>safe(()=>handleChange(e.target)));
-document.addEventListener('input',e=>{if(e.target.id==='search'){search=e.target.value;const start=e.target.selectionStart;render();const input=document.querySelector('#search');input.focus();input.setSelectionRange(start,start);}});
+document.addEventListener('input',e=>{if(e.target.id==='weight')fitWeight();if(e.target.id==='search'){search=e.target.value;const start=e.target.selectionStart;render();const input=document.querySelector('#search');input.focus();input.setSelectionRange(start,start);}});
 modal.addEventListener('submit',e=>{e.preventDefault();safe(()=>submit(e.target));});
 
 async function checkOffline(){const el=document.querySelector('#offline-status');if(!el)return;let ready=false;for(const name of await caches.keys())if(name.startsWith('gym11-')){const cache=await caches.open(name);if(await cache.match(new URL('./offline-ready',location.href)))ready=true;}if(document.querySelector('#offline-status'))document.querySelector('#offline-status').textContent=ready?'Lista':'Preparando…';}
