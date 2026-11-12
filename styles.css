@@ -451,3 +451,18 @@ main.home-page{padding-top:calc(var(--safe-top) + 34px)}
 .cover-lead{font-size:28px;font-weight:800;letter-spacing:-.8px;line-height:1.08;margin:0;color:#111}
 .cover-note{font-size:17px;color:var(--muted);margin:2px 0 0}
 .home-panel{margin:0;padding:0;border-radius:0;min-height:0;max-width:none}
+/* sets and rest */
+.sets-track{display:flex;gap:6px;width:100%;max-width:280px;margin-top:6px}
+.sets-track i{flex:1;height:8px;border-radius:4px;background:#e4e4e4;transition:background .25s}
+.sets-track i.on{background:#111}
+.sets-label{color:var(--muted);font-size:13px}
+.finish-early{align-self:center;font-size:15px;min-height:36px}
+.rest{background:#111;color:#fff;border-radius:28px;padding:16px 18px 14px;display:flex;flex-direction:column;gap:10px}
+.rest-top small{color:#a8a8a8;font-size:13px}
+.rest-time{font:800 56px ui-rounded,-apple-system,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-1px;line-height:1;text-align:center}
+.rest-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
+.rest-bar i{display:block;height:100%;background:#fff;border-radius:3px;transition:width .25s linear}
+.rest-actions{display:flex;gap:8px}
+.rest-actions button{flex:1;min-height:44px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:700;text-align:center}
+body:has(#foot .rest) main{padding-bottom:calc(var(--safe-bottom) + 250px)}
+body:has(#foot .finish-early) main{padding-bottom:calc(var(--safe-bottom) + 150px)}
