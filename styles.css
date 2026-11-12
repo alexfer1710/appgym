@@ -410,7 +410,7 @@ button.primary:disabled{background:#d6d6d6;color:#fff;opacity:1}
 .ex-row .thumb{border-radius:16px;width:60px;height:60px}
 .ex-row strong{font-weight:700}
 .grip{background:var(--surface);border-radius:24px}
-.timer{color:var(--muted);font-weight:600}
+.timer{font:800 40px ui-rounded,-apple-system,sans-serif;color:#111;letter-spacing:-.5px;margin:4px 0 2px}
 .block,.prior{background:var(--surface);border-radius:20px}
 .float-bar .icon-btn{background:#fff}
 .pill{background:rgba(17,17,17,.6)}

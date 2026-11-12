@@ -188,17 +188,17 @@ ${priorCard()}</div>`,{bar:false,cls:'flush',footer:`<button type="button" class
 }
 function renderActive(){
  const e=selection.exercise,uni=unilateralMode(e)==='always'||(unilateralMode(e)==='optional'&&selection.unilateral),detail=[selection.grip,e.usesCable?'Polea · '+stationName(selection.cableStation):null,uni?'Unilateral':null,selection.dropset?'Dropset':null].filter(Boolean).join(' · ');
- show(`${topbar(back('Ajustes del ejercicio','setup'))}<div class="active-view"><div class="timer" id="timer" aria-label="Tiempo efectivo">0:00</div><h1>${esc(e.name)}</h1>${detail?`<small class="muted">${esc(detail)}</small>`:''}<p class="muted">${plural(selection.sets,'serie','series')} · ${selection.toFailure?'al fallo':selection.reps+' repeticiones'}</p>${setsTrack()}
+ show(`${topbar(back('Ajustes del ejercicio','setup'))}<div class="active-view"><div class="timer" id="timer" aria-label="Tiempo efectivo">0:00</div><h1>${esc(e.name)}</h1>${detail?`<small class="muted">${esc(detail)}</small>`:''}<p class="muted">${plural(selection.sets,'serie','series')} · ${selection.toFailure?'al fallo':selection.reps+' repeticiones'}</p>${trackSets?setsTrack():''}
 ${adviceChip()}<label class="weight-value"><input id="weight" inputmode="decimal" enterkeyhint="done" value="${num(selection.weight)}" aria-label="Peso en kilos (toca para escribirlo)"><span>kg</span></label>${weightRuler(lastWeight())}</div>${priorCard()}`,
- {bar:false,footer:activeFooter()});
+ {bar:false,footer:trackSets?activeFooter():`<button type="button" class="primary check" data-action="rate" aria-label="Terminar ejercicio">${icon('check')}</button>`});
  updateTimer();fitWeight();setupRuler();markAdvice();
 }
 /* ---------- sets and rest ---------- */
 // One segment per planned set, filled as sets are done. After each set a rest countdown runs
 // (default 90 s, the last length used is remembered); the last set goes straight to the rating.
-let restSeconds=90,audio=null;
+let restSeconds=90,audio=null,trackSets=false; // set-by-set mode is optional (Ajustes), off by default
 const setsDone=()=>selection?.setsDone||0;
-const resting=()=>!!selection?.restUntil;
+const resting=()=>trackSets&&!!selection?.restUntil;
 function setsTrack(){const n=Math.max(selection.sets,setsDone());return `<div class="sets-track" aria-label="${setsDone()} de ${selection.sets} series hechas">${Array.from({length:n},(_,i)=>`<i class="${i<setsDone()?'on':''}"></i>`).join('')}</div><small class="sets-label">${setsDone()?`${setsDone()} de ${selection.sets} hechas`:'Ninguna serie hecha todavía'}</small>`;}
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
 function activeFooter(){
@@ -310,6 +310,7 @@ function renderSettings(){
  const p=cloud.profile();
  show(`<h1>Ajustes</h1>
 ${p?section('Tu perfil',`<div class="row"><span class="badge-icon blue">${esc(p.firstName.charAt(0))}</span><span class="grow"><strong>${esc(p.name)}</strong><small id="cloud-status">${esc(cloudText())}</small></span></div><button type="button" class="row" data-action="restore-list"><span class="row-label">Recuperar una copia anterior</span>${chevron()}</button>${btn('Cerrar sesión','logout','row danger')}`,'Tus datos se sincronizan solos: entrando con tu nombre ves lo mismo en cualquier dispositivo. Sin internet puedes seguir usándola y los cambios se suben al volver la conexión.'):''}
+${section('Entrenamiento',`<label class="row"><span class="row-label">Contar series y descanso</span>${toggle('track-sets',trackSets,'track-sets')}</label>`,'Si lo activas, marcas cada serie al acabarla y entre series sale una cuenta atrás de descanso. Desactivado, solo empiezas el ejercicio y lo terminas con ✓.')}
 ${section('Copias en archivo',`<button type="button" class="row" data-action="export"><span class="row-label">Exportar copia JSON</span>${chevron()}</button><label class="row"><span class="row-label">Importar copia…</span>${chevron()}<input type="file" id="import" accept=".json,application/json" hidden></label>`,'La importación se confirma antes de guardar y evita duplicados. También acepta la exportación de la app de Swift y el histórico de Notas.')}
 ${section('Esta app',`<div class="row"><span class="row-label">Sin conexión</span><small class="muted" id="offline-status">Comprobando…</small></div><button type="button" class="row" data-action="persist"><span class="row-label">Almacenamiento protegido</span><small class="muted">${persisted?'Concedido':'Solicitar'}</small></button><a class="row" href="https://repdb.co" target="_blank" rel="noopener"><span class="row-label">Ilustraciones de RepDB</span>${chevron()}</a>`,'Para instalarla: Safari → Compartir → Añadir a pantalla de inicio.')}`);
  checkOffline();
@@ -398,6 +399,7 @@ async function action(a){
 }
 async function handleChange(el){
  if(el.id==='import'){const file=el.files[0];if(!file)return;if(file.size>80*1024*1024)throw new Error('La copia supera 80 MB.');pendingImport=await prepareImport(JSON.parse(await file.text()));openDialog(`<header class="sheet-bar">${btn('Cancelar','close','link')}<h2>Importar copia</h2>${btn('Importar','confirm-import','link strong')}</header><div class="list"><div class="row"><span class="row-label">Contenido</span><small class="muted">${plural(pendingImport.sessions.length,'entreno','entrenos')} · ${pendingImport.exercises.length} ejercicios</small></div><label class="row"><span class="row-label">Reemplazar los repetidos</span>${toggle('overwrite',false,'overwrite')}</label></div><p class="footnote">Desactivado: se conservan los entrenos que ya tienes con el mismo identificador.</p>`);return;}
+ if(el.id==='track-sets'){trackSets=el.checked;await db.put('settings',{id:'trackSets',value:trackSets});toast(trackSets?'Contarás series y descanso.':'Solo empezar y terminar.');return;}
  if(el.name==='failure'&&el.form){el.form.querySelector('[data-reps]')?.classList.toggle('off',el.checked);return;}
  if(!selection||el.closest('dialog'))return;
  if(el.id==='weight'){const value=decimal(el.value);if(!Number.isFinite(value)||value<0||value>10000){el.value=num(selection.weight);throw new Error('Introduce un peso entre 0 y 10.000 kg.');}selection.weight=value;el.value=num(value);fitWeight();rulerTo(value,true);markAdvice();}
@@ -494,4 +496,4 @@ async function registerWorker(){
  reg.update().catch(()=>{});
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update().catch(()=>{});});
 }
-safe(async()=>{await db.init();await load();layout=(await db.get('settings','layout'))?.value||'grid';restSeconds=(await db.get('settings','restSeconds'))?.value||90;if(cloud.profile()){restorePlace();render();cloud.flush();}else renderLogin();persisted=(await db.persistence()).persistent;await registerWorker().catch(e=>console.warn('Service worker:',e));});
+safe(async()=>{await db.init();await load();layout=(await db.get('settings','layout'))?.value||'grid';restSeconds=(await db.get('settings','restSeconds'))?.value||90;trackSets=!!(await db.get('settings','trackSets'))?.value;if(cloud.profile()){restorePlace();render();cloud.flush();}else renderLogin();persisted=(await db.persistence()).persistent;await registerWorker().catch(e=>console.warn('Service worker:',e));});
