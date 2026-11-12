@@ -63,11 +63,13 @@ La sesión activa se guarda tras cada cambio. El cronómetro utiliza marcas de t
 
 ## Perfiles y copias en la nube
 
-Al abrir la app por primera vez se pide el nombre y la inicial del apellido, por ejemplo «Alex F» (sin contraseña). Cualquier nombre nuevo crea su perfil; mayúsculas, acentos y el resto del apellido no cuentan («Alex Fernández» entra en «Alex F»). Los datos siguen guardándose en el iPhone y la app funciona sin conexión; cada cambio guardado sube una copia a Cloudflare cuando hay internet.
+Al abrir la app por primera vez se pide el nombre y la inicial del apellido, por ejemplo «Alex F» (sin contraseña). Cualquier nombre nuevo crea su perfil; mayúsculas, acentos y el resto del apellido no cuentan («Alex Fernández» entra en «Alex F»). Los datos se sincronizan con la nube: la última copia del perfil es la versión compartida, así que Safari, el icono de la pantalla de inicio y otros móviles ven lo mismo. Cada dispositivo guarda una copia completa para funcionar sin conexión; los cambios se suben cuando hay internet y las versiones más nuevas de otro dispositivo se descargan al abrir la app (y cada 2 minutos con la app abierta).
 
 - `functions/api/[[path]].js`: API en Cloudflare Pages Functions. `POST /api/login`, `GET|POST /api/profiles/<id>/backups`, `GET /api/profiles/<id>/backups/<fecha|latest>`.
 - Las copias se guardan en Workers KV (binding `BACKUPS`: `gym11-backups` en producción, `gym11-backups-preview` en previsualizaciones). Cada copia es una entrada nueva; nunca se sobrescriben.
-- `js/cloud.js`: perfil, copia automática, recuperar y cerrar sesión. Cerrar sesión sube una copia y vacía el dispositivo.
+- `js/cloud.js`: perfil y sincronización (`sync()`), recuperar y cerrar sesión. Cerrar sesión sincroniza y vacía el dispositivo.
+- Si este dispositivo tiene cambios sin subir y la nube tiene una versión más nueva de otro, la app pregunta con cuál quedarse; la otra se sube igualmente como copia, así que no se pierde.
+- Mientras hay un entreno en curso no se descargan cambios de la nube; se hace al terminarlo.
 - Al entrar en un móvil vacío se recupera la última copia. Desde **Ajustes → Recuperar una copia** se puede volver a cualquier copia anterior.
 
 Para probar en local con KV simulado:
