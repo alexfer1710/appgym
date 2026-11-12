@@ -400,7 +400,7 @@ async function checkOffline(){const el=document.querySelector('#offline-status')
 // The workout in progress is saved in IndexedDB and the screen is restored after the reload.
 function showUpdate(){
  let box=document.querySelector('#update');
- if(!box){box=document.createElement('dialog');box.id='update';box.className='alert';box.addEventListener('cancel',e=>e.preventDefault());document.body.append(box);}
+ if(!box){box=document.createElement('dialog');box.id='update';box.className='alert';box.addEventListener('cancel',e=>e.preventDefault());box.addEventListener('close',()=>{if(waitingWorker)setTimeout(()=>box.isConnected&&!box.open&&box.showModal(),0);});document.body.append(box);}
  box.innerHTML=`<span class="alert-icon">${icon('check-circle')}</span><h2>Hemos actualizado Gym11</h2><p>Hay una versión nueva de la app. Actualiza para seguir; tus datos${draft?' y el entreno en curso':''} se conservan.</p><button type="button" class="primary" data-action="update">Actualizar</button>`;
  if(!box.open)box.showModal();
 }
