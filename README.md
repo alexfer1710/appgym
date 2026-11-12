@@ -117,3 +117,12 @@ Las referencias de peso conservan el comportamiento de Swift: última carga posi
 El acceso a datos está separado de las funciones de cálculo para poder añadir sincronización en el futuro. Antes de hacerlo habrá que definir usuarios, conflictos y eliminaciones; no hay sincronización activa.
 
 Algunas ilustraciones proceden de [RepDB](https://repdb.co). Otras se aportaron al proyecto como imágenes personalizadas.
+
+## Diseño
+
+El aspecto sigue el de la app original en Swift (solo modo claro): portada con imagen, barra de pestañas de iOS, listas agrupadas, hojas inferiores para los formularios y controles nativos (segmentados, interruptores, contadores) en lugar de desplegables y casillas.
+
+- `js/icons.js`: iconos SVG en línea. Los de línea equivalen a los SF Symbols del original (trazos adaptados de Lucide, licencia ISC); los de grupos musculares están portados del `MuscleIcon` de Swift.
+- `styles.css`: variables de color y componentes (`.card`, `.list`/`.row`, `.seg`, `.switch`, `.stepper`, `.choices`, `.chips`).
+- `assets/home-hero.jpg`: imagen de la portada, la misma de la app de Swift.
+- La pantalla en la que estabas se recuerda en `sessionStorage` (`gym11-nav`) para volver a ella si iOS recarga la app.
