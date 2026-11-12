@@ -52,7 +52,7 @@ const sheetBar=(title,submit='Guardar')=>`<header class="sheet-bar">${btn('Cance
 
 function show(html,{footer='',bar=true,cls=''}={}){
  app.className=cls;app.innerHTML=html;foot.innerHTML=footer;
- nav.innerHTML=bar?TABS.map(([id,ic,label])=>`<button type="button" data-tab="${id}" class="${tab===id?'active':''}" aria-current="${tab===id?'page':'false'}">${icon(ic)}<span>${label}</span></button>`).join(''):'';
+ nav.innerHTML=bar?TABS.map(([id,ic,label])=>`<button type="button" data-tab="${id}" class="${tab===id?'active':''}" aria-current="${tab===id?'page':'false'}" aria-label="${label}">${icon(ic)}<span class="sr-only">${label}</span></button>`).join(''):'';
  document.body.dataset.chrome=footer?'foot':bar?'nav':'none';
  const key=view||tab;if(key!==lastKey){scrollTo(0,0);lastKey=key;}
  try{sessionStorage.setItem('gym11-nav',JSON.stringify({tab,view,editing,filter,pick}));}catch{}
