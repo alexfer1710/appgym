@@ -68,8 +68,8 @@ Al abrir la app por primera vez se pide el nombre y la inicial del apellido, por
 - `functions/api/[[path]].js`: API en Cloudflare Pages Functions. `POST /api/login`, `GET|POST /api/profiles/<id>/backups`, `GET /api/profiles/<id>/backups/<fecha|latest>`.
 - Las copias se guardan en Workers KV (binding `BACKUPS`: `gym11-backups` en producción, `gym11-backups-preview` en previsualizaciones). Cada copia es una entrada nueva; nunca se sobrescriben.
 - `js/cloud.js`: perfil y sincronización (`sync()`), recuperar y cerrar sesión. Cerrar sesión sincroniza y vacía el dispositivo.
-- Si este dispositivo tiene cambios sin subir y la nube tiene una versión más nueva de otro, la app pregunta con cuál quedarse; la otra se sube igualmente como copia, así que no se pierde.
-- Mientras hay un entreno en curso no se descargan cambios de la nube; se hace al terminarlo.
+- Todo es automático, sin preguntas: si este dispositivo tiene cambios sin subir y la nube tiene una versión más nueva, se fusionan registro a registro (gana la edición más reciente de cada entreno; los entrenos borrados quedan marcados en `settings/deleted-sessions` para que no reaparezcan).
+- Un entreno en curso (borrador) nunca se toca al sincronizar.
 - Al entrar en un móvil vacío se recupera la última copia. Desde **Ajustes → Recuperar una copia** se puede volver a cualquier copia anterior.
 
 Para probar en local con KV simulado:
