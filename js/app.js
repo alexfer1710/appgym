@@ -186,9 +186,31 @@ ${priorCard()}</div>`,{bar:false,cls:'flush',footer:`<button type="button" class
 function renderActive(){
  const e=selection.exercise,uni=unilateralMode(e)==='always'||(unilateralMode(e)==='optional'&&selection.unilateral),detail=[selection.grip,e.usesCable?'Polea · '+stationName(selection.cableStation):null,uni?'Unilateral':null,selection.dropset?'Dropset':null].filter(Boolean).join(' · ');
  show(`${topbar(back('Ajustes del ejercicio','setup'))}<div class="active-view"><div class="timer" id="timer" aria-label="Tiempo efectivo">0:00</div><h1>${esc(e.name)}</h1>${detail?`<small class="muted">${esc(detail)}</small>`:''}<p class="muted">${plural(selection.sets,'serie','series')} · ${selection.toFailure?'al fallo':selection.reps+' repeticiones'}</p>
-<div class="weight"><div class="col">${[5,1,.25].map(n=>btn('+'+num(n),'weight:'+n)).join('')}</div><label class="weight-value"><input id="weight" inputmode="decimal" value="${num(selection.weight)}" aria-label="Peso en kilos"><span>kg</span></label><div class="col">${[5,1,.25].map(n=>btn('−'+num(n),'weight:'+(-n))).join('')}</div></div></div>${priorCard()}`,
+<label class="weight-value"><input id="weight" inputmode="decimal" enterkeyhint="done" value="${num(selection.weight)}" aria-label="Peso en kilos (toca para escribirlo)"><span>kg</span></label>${weightRuler(lastWeight())}</div>${priorCard()}`,
  {bar:false,footer:`<button type="button" class="primary check" data-action="rate" aria-label="Terminar ejercicio">${icon('check')}</button>`});
- updateTimer();fitWeight();
+ updateTimer();fitWeight();setupRuler();
+}
+// Weight ruler: one tick every 0,25 kg, a longer one every kilo and a numbered one every 5 kg.
+// It scrolls under a fixed needle and snaps to the nearest tick; the big number above can be typed.
+const RULER_STEP=.25,RULER_PX=10,RULER_MAX=300;
+const lastWeight=()=>{const p=antecedents(sessions,selection.exercise,selection.grip,selection.cableStation).find(x=>x.weight>0);return p?p.weight:null;};
+function weightRuler(last){
+ const n=RULER_MAX/RULER_STEP,lastIdx=last!=null?Math.round(last/RULER_STEP):-1;let ticks='';
+ for(let i=0;i<=n;i++){const kg=i*RULER_STEP,cls=kg%5===0?'t five':kg%1===0?'t kg':'t';ticks+=`<i class="${cls}${i===lastIdx?' last':''}">${kg%1===0?`<b>${kg}</b>`:''}</i>`;}
+ return `<div class="ruler-wrap"><div class="ruler" id="ruler" aria-hidden="true"><div class="ruler-track">${ticks}</div></div><span class="needle"></span></div>${last!=null?`<small class="ruler-legend"><i></i>Última vez: ${num(last)} kg</small>`:''}`;
+}
+let rulerSave=null,rulerQuiet=false;
+function rulerTo(weight,smooth=false){const r=document.querySelector('#ruler');if(!r)return;rulerQuiet=true;r.scrollTo({left:Math.round(Math.min(RULER_MAX,Math.max(0,weight))/RULER_STEP)*RULER_PX,behavior:smooth?'smooth':'instant'});setTimeout(()=>{rulerQuiet=false;},smooth?500:80);}
+function setupRuler(){
+ const r=document.querySelector('#ruler');if(!r)return;
+ requestAnimationFrame(()=>rulerTo(selection.weight));
+ r.addEventListener('scroll',()=>{
+  if(rulerQuiet||!selection)return;
+  const w=Math.min(RULER_MAX,Math.max(0,Math.round(r.scrollLeft/RULER_PX)*RULER_STEP));
+  if(w===selection.weight)return;
+  selection.weight=w;const input=document.querySelector('#weight');if(input&&document.activeElement!==input){input.value=num(w);fitWeight();}
+  clearTimeout(rulerSave);rulerSave=setTimeout(()=>saveSelection(),300);
+ },{passive:true});
 }
 function fitWeight(){const el=document.querySelector('#weight');if(!el)return;const probe=fitWeight.probe||=Object.assign(document.createElement('span'),{className:'weight-probe'});if(!probe.isConnected)document.body.append(probe);el.style.fontSize='';const cs=getComputedStyle(el);for(const k of ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','fontVariantNumeric'])probe.style[k]=cs[k];probe.textContent=el.value||'0';let width=probe.getBoundingClientRect().width+4;const room=el.parentElement.clientWidth-(el.nextElementSibling?.offsetWidth||0)-8;el.style.fontSize='';if(width>room){const size=parseFloat(cs.fontSize)*room/width;el.style.fontSize=size+'px';width=room;}el.style.width=Math.ceil(width)+'px';}
 function updateTimer(){const el=document.querySelector('#timer');if(el&&selection?.started){const sec=Math.max(0,Math.floor((Date.now()-selection.started)/1000));el.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}}
@@ -322,7 +344,7 @@ async function handleChange(el){
  if(el.id==='import'){const file=el.files[0];if(!file)return;if(file.size>80*1024*1024)throw new Error('La copia supera 80 MB.');pendingImport=await prepareImport(JSON.parse(await file.text()));openDialog(`<header class="sheet-bar">${btn('Cancelar','close','link')}<h2>Importar copia</h2>${btn('Importar','confirm-import','link strong')}</header><div class="list"><div class="row"><span class="row-label">Contenido</span><small class="muted">${plural(pendingImport.sessions.length,'entreno','entrenos')} · ${pendingImport.exercises.length} ejercicios</small></div><label class="row"><span class="row-label">Reemplazar los repetidos</span>${toggle('overwrite',false,'overwrite')}</label></div><p class="footnote">Desactivado: se conservan los entrenos que ya tienes con el mismo identificador.</p>`);return;}
  if(el.name==='failure'&&el.form){el.form.querySelector('[data-reps]')?.classList.toggle('off',el.checked);return;}
  if(!selection||el.closest('dialog'))return;
- if(el.id==='weight'){const value=decimal(el.value);if(!Number.isFinite(value)||value<0||value>10000){el.value=num(selection.weight);throw new Error('Introduce un peso entre 0 y 10.000 kg.');}selection.weight=value;el.value=num(value);fitWeight();}
+ if(el.id==='weight'){const value=decimal(el.value);if(!Number.isFinite(value)||value<0||value>10000){el.value=num(selection.weight);throw new Error('Introduce un peso entre 0 y 10.000 kg.');}selection.weight=value;el.value=num(value);fitWeight();rulerTo(value,true);}
  for(const [id,key] of [['unilateral','unilateral'],['dropset','dropset']])if(el.id===id)selection[key]=el.checked;
  await saveSelection();
 }
