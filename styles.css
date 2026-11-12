@@ -309,6 +309,12 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 dialog .seg{margin-bottom:18px}
 dialog .row .seg{margin:0}
 dialog h2.section{margin-top:4px}
+dialog.alert{margin:auto;width:calc(100% - 64px);max-width:320px;max-height:none;border-radius:20px;padding:24px 20px 20px;text-align:center;background:var(--surface);overflow:visible;animation:none}
+dialog.alert::backdrop{background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+dialog.alert h2{font-size:20px;margin:10px 0 8px}
+dialog.alert p{font-size:15px;color:var(--muted);margin:0 0 20px}
+.alert-icon{display:inline-grid;place-items:center;width:52px;height:52px;border-radius:16px;background:var(--tint);color:var(--accent)}
+.alert-icon .icon{width:30px;height:30px}
 #notice{position:fixed;top:calc(var(--safe-top) + 8px);left:50%;transform:translateX(-50%);z-index:50;width:max-content;max-width:calc(100% - 32px);pointer-events:none}
 #notice:not(:empty){padding:11px 18px;background:rgba(40,40,42,.92);color:#fff;border-radius:22px;font-size:15px;font-weight:500;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.18);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 
