@@ -193,6 +193,11 @@ label.row>input:only-child{text-align:left}
 .group .muscle-icon{width:42px;height:42px}
 .group strong{font-size:19px}
 .group small{color:var(--muted)}
+.group{position:relative}
+.order{display:grid;place-items:center;min-width:24px;height:24px;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.group.small .order{position:absolute;top:5px;right:5px;min-width:20px;height:20px;font-size:12px}
+.seg.tabs-4>button,.seg.tabs-5>button{font-size:12px;padding:0 3px}
+.seg.tabs-5>button{letter-spacing:-.2px}
 .grid.minor{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}
 .group.small{align-items:center;gap:6px;padding:10px 2px 8px;border-radius:14px}
 .group.small .muscle-icon{width:34px;height:34px}

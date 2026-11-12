@@ -7,7 +7,7 @@ import {icon,muscleIcon} from './icons.js';
 const app=document.querySelector('#app'),nav=document.querySelector('#nav'),foot=document.querySelector('#foot'),modal=document.querySelector('#modal');
 let exercises=[],sessions=[],draft=null,tab='home',view=null,selection=null,layout='grid',filter='Todos',search='',persisted=false,waitingWorker=null;
 let editing=null;                                  // saved session receiving exercises by hand
-let pick={group:null,complement:'Ninguno'};        // muscle selection before a workout starts
+let pick=[];                                       // muscle groups chosen for today, in tap order
 let histMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1),histDay=null;
 let lastKey=null,pendingImport=null;
 
@@ -15,6 +15,7 @@ const STATIONS=[['sala1','Sala 1'],['sala2','Sala 2'],['sala3','Sala 3']];
 const FEELINGS=['Fácil','Perfecto','Demasiado'];
 const TABS=[['home','house','Inicio'],['history','calendar','Historial'],['catalog','dumbbell','Ejercicios'],['settings','gear','Ajustes']];
 const MAIN_GROUPS=['Pecho','Espalda','Hombro','Pierna'];
+const MAX_PICK=4;                                  // quick-access tabs during a workout
 const WORKOUT_VIEWS=['groups','select','grip','setup','active','rating','session:draft'];
 
 /* ---------- small helpers ---------- */
@@ -54,14 +55,14 @@ function show(html,{footer='',bar=true,cls=''}={}){
  nav.innerHTML=bar?TABS.map(([id,ic,label])=>`<button type="button" data-tab="${id}" class="${tab===id?'active':''}" aria-current="${tab===id?'page':'false'}">${icon(ic)}<span>${label}</span></button>`).join(''):'';
  document.body.dataset.chrome=footer?'foot':bar?'nav':'none';
  const key=view||tab;if(key!==lastKey){scrollTo(0,0);lastKey=key;}
- try{sessionStorage.setItem('gym11-nav',JSON.stringify({tab,view,editing,filter}));}catch{}
+ try{sessionStorage.setItem('gym11-nav',JSON.stringify({tab,view,editing,filter,pick}));}catch{}
 }
 // After a reload (iOS may restart the app in the background) go back to the same screen.
 function restorePlace(){
  let saved;try{saved=JSON.parse(sessionStorage.getItem('gym11-nav')||'null');}catch{}
  if(!saved)return;
  if(TABS.some(t=>t[0]===saved.tab))tab=saved.tab;
- editing=saved.editing||null;if(['Todos',...groups].includes(saved.filter))filter=saved.filter;
+ editing=saved.editing||null;if(Array.isArray(saved.pick))pick=saved.pick.filter(g=>groups.includes(g)).slice(0,MAX_PICK);if(['Todos',...groups].includes(saved.filter))filter=saved.filter;
  view=saved.view||null;
  if(view==='groups'){if(draft)view=null;}
  else if(WORKOUT_VIEWS.includes(view)){if(!draft)view=null;else{selection=draft.selection||null;if(view!=='session:draft')view=selection&&['grip','setup','active','rating'].includes(draft.phase)?draft.phase:'select';}}
@@ -76,8 +77,9 @@ async function saveSelection(){if(draft){draft.selection=selection;draft.phase=v
 function reorder(s){const order={};s.entries.forEach(e=>e.order=order[e.exercise.group]=(order[e.exercise.group]||0)+1);}
 function currentSession(){if(view==='pick')return sessions.find(s=>s.id===editing);return view==='session:draft'?draft:sessions.find(s=>s.id===view?.slice(8));}
 async function persistSession(s){if(s===draft)await saveDraft();else{s.editedAfterImport=true;await db.put('sessions',s);}}
-const allowsComplement=g=>!['Pierna','Glúteo'].includes(g);
-const defaultComplement=g=>g==='Pecho'?'Tríceps':g==='Espalda'?'Bíceps':'Ninguno';
+// Groups actually trained: the planned ones that got exercises (in the chosen order),
+// then any other group in the order its first exercise was done.
+function trainedGroups(s){const done=s.entries.map(e=>e.exercise.group);return [...new Set([...s.groups.filter(g=>done.includes(g)),...done])];}
 const lastFor=g=>sessions.find(s=>s.groups.includes(g)&&s.entries.some(e=>e.exercise.group===g));
 
 /* ---------- router ---------- */
@@ -122,17 +124,17 @@ ${latest?`<button type="button" class="card last" data-session="${esc(latest.id)
 }
 
 /* ---------- workout: muscle group ---------- */
-function defaultGroup(){const mains=MAIN_GROUPS,last=g=>sessions.find(s=>s.groups[0]===g)?.date||'';return [...mains].sort((a,b)=>last(a)<last(b)?-1:last(a)>last(b)?1:0)[0];}
+function groupCard(x,small){
+ const n=pick.indexOf(x)+1,on=n>0;
+ return small?`<button type="button" class="card group small ${on?'on':''}" data-group="${esc(x)}" aria-pressed="${on}">${on?`<span class="order">${n}</span>`:''}${muscleIcon(x)}<strong>${esc(x)}</strong></button>`
+  :`<button type="button" class="card group ${on?'on':''}" data-group="${esc(x)}" aria-pressed="${on}"><span class="between top">${muscleIcon(x)}${on?`<span class="order">${n}</span>`:`<small>${exercises.filter(e=>e.group===x&&!e.deleted).length}</small>`}</span><strong>${esc(x)}</strong><small>${esc(daysAgo(lastFor(x)?.date))}</small></button>`;
+}
 function renderGroups(){
- if(!pick.group){pick.group=defaultGroup();pick.complement=defaultComplement(pick.group);}
- const g=pick.group,last=lastFor(g),lastEntries=last?.entries.filter(e=>e.exercise.group===g)||[];
- const label=g+(allowsComplement(g)&&pick.complement!=='Ninguno'?' + '+pick.complement:'');
- show(`${topbar(back('Atrás','home'))}<h1>Elige grupo muscular</h1>
-<div class="grid">${MAIN_GROUPS.map(x=>`<button type="button" class="card group ${x===g?'on':''}" data-group="${esc(x)}" aria-pressed="${x===g}"><span class="between top">${muscleIcon(x)}<small>${exercises.filter(e=>e.group===x&&!e.deleted).length}</small></span><strong>${esc(x)}</strong><small>${esc(daysAgo(lastFor(x)?.date))}</small></button>`).join('')}</div>
-<div class="grid minor">${groups.filter(x=>!MAIN_GROUPS.includes(x)).map(x=>`<button type="button" class="card group small ${x===g?'on':''}" data-group="${esc(x)}" aria-pressed="${x===g}">${muscleIcon(x)}<strong>${esc(x)}</strong></button>`).join('')}</div>
-${allowsComplement(g)?`<h2 class="section">Complemento</h2>${segButtons(['Tríceps','Bíceps','Ninguno'].filter(x=>x!==g).map(x=>['complement:'+x,x,pick.complement===x]))}`:''}
-<div class="card last static"><span class="muted">${icon('history')}</span><span class="grow"><small>Última vez · ${esc(g)}</small>${last?`<strong>${esc(new Date(last.date).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}))}</strong><small>${plural(lastEntries.length,'ejercicio','ejercicios')}${lastEntries.some(e=>e.sets)?` · ${lastEntries.reduce((n,e)=>n+(e.sets||0),0)} series`:''}</small>`:'<strong>Todavía sin entrenos registrados</strong>'}</span></div>`,
- {bar:false,footer:`<button type="button" class="primary" data-action="group-start">Empezar ${esc(label)}${icon('arrow-right')}</button>`});
+ show(`${topbar(back('Atrás','home'))}<h1>¿Qué toca hoy?</h1><p class="muted sub">Toca los grupos en el orden que quieras, hasta ${MAX_PICK}. Serán tus accesos rápidos durante el entreno.</p>
+<div class="grid">${MAIN_GROUPS.map(x=>groupCard(x,false)).join('')}</div>
+<div class="grid minor">${groups.filter(x=>!MAIN_GROUPS.includes(x)).map(x=>groupCard(x,true)).join('')}</div>
+<p class="footnote">Si haces un ejercicio de otro grupo, búscalo en «Todos»: también quedará registrado.</p>`,
+ {bar:false,footer:`<button type="button" class="primary" data-action="group-start" ${pick.length?'':'disabled'}>${pick.length?`Empezar ${pick.length<=2?esc(pick.join(' + ')):`entreno · ${pick.length} grupos`}${icon('arrow-right')}`:'Elige al menos un grupo'}</button>`});
 }
 
 /* ---------- exercise library: tab, workout selection, add to past workout ---------- */
@@ -148,10 +150,10 @@ function renderLibrary(mode){
  const head=inWorkout?`${topbar(back('Inicio','home'),iconBtn('plus','new-exercise','Nuevo ejercicio'))}<h1>Elige ejercicio</h1>`
   :picking?`${topbar(back('Entreno','back-to-session'),iconBtn('plus','new-exercise','Nuevo ejercicio'))}<h1>Añadir ejercicio</h1><p class="muted sub">${esc(s.groups.join(' + '))} · ${esc(date(s.date))} · ${plural(s.entries.length,'ejercicio','ejercicios')}</p>`
   :`<div class="title-row"><h1>Ejercicios</h1>${iconBtn('plus','new-exercise','Nuevo ejercicio')}</div>`;
- const filters=inWorkout?segButtons([...draft.groups,'Todos'].map(g=>['filter:'+g,esc(g),filter===g]))
+ const filters=inWorkout?segButtons([...draft.groups,'Todos'].map(g=>['filter:'+g,esc(g),filter===g])).replace('class="seg"',`class="seg tabs-${draft.groups.length+1}"`)
   :`<div class="chips" id="chips">${['Todos',...groups].map(g=>`<button type="button" data-action="filter:${esc(g)}" class="${filter===g?'on':''}">${esc(g)}</button>`).join('')}</div>`;
  show(`${head}<label class="search">${icon('search')}<input id="search" type="search" placeholder="Buscar ejercicio" value="${esc(search)}" aria-label="Buscar ejercicio" autocomplete="off" autocorrect="off" spellcheck="false"></label>${filters}
-<div class="between meta-line"><small class="muted">${inWorkout?`${esc(draft.groups.join(' + '))} · ${plural(draft.entries.length,'hecho','hechos')}`:`${plural(list.length,'ejercicio','ejercicios')} · recientes primero`}</small>${segButtons([['layout:grid',icon('grid'),layout==='grid'],['layout:list',icon('list'),layout==='list']]).replace('class="seg"','class="seg compact" aria-label="Presentación"')}</div>
+<div class="between meta-line"><small class="muted">${inWorkout?plural(draft.entries.length,'ejercicio hecho','ejercicios hechos'):`${plural(list.length,'ejercicio','ejercicios')} · recientes primero`}</small>${segButtons([['layout:grid',icon('grid'),layout==='grid'],['layout:list',icon('list'),layout==='list']]).replace('class="seg"','class="seg compact" aria-label="Presentación"')}</div>
 <div class="${layout==='grid'?'grid':'stack'}">${list.map(e=>exerciseCard(e,mode)).join('')}</div>${list.length?'':`<div class="empty">${icon('dumbbell')}<strong>No hay ejercicios</strong><p>Prueba con otro nombre o añade uno con +.</p></div>`}`,
  {bar:!inWorkout,footer:inWorkout?`<button type="button" class="done-row" data-action="summary"><span>Ejercicios hechos (${draft.entries.length})</span>${icon('chevron-up')}</button><button type="button" class="primary" data-action="finish-workout" ${draft.entries.length?'':'disabled'}>Finalizar</button>`:''});
 }
@@ -204,9 +206,9 @@ function entryRow(e){
 }
 function renderSession(id){
  const isDraft=id==='draft',s=isDraft?draft:sessions.find(x=>x.id===id);if(!s){view=null;return render();}
- const sets=s.entries.reduce((n,e)=>n+(e.sets||0),0);
+ const sets=s.entries.reduce((n,e)=>n+(e.sets||0),0),shown=isDraft&&s.entries.length?trainedGroups(s):s.groups;
  show(`${topbar(back(isDraft?'Ejercicios':'Historial',isDraft?'select':'history'),isDraft?'':btn('Editar','edit-session','link'))}<h1>${isDraft?'Ejercicios hechos':'Tu entreno'}</h1>
-<div class="summary"><small class="muted">${date(s.date)}</small><div class="summary-title">${s.groups.map(g=>muscleIcon(g)).join('')}<strong>${esc(s.groups.join(' + ')||s.historicalTitle||'Entreno')}</strong></div><small class="muted">${plural(s.entries.length,'ejercicio','ejercicios')}${minutes(s)?` · ${minutes(s)} min efectivos`:''}</small></div>
+<div class="summary"><small class="muted">${date(s.date)}</small><div class="summary-title">${shown.map(g=>muscleIcon(g)).join('')}<strong>${esc(shown.join(' + ')||s.historicalTitle||'Entreno')}</strong></div><small class="muted">${plural(s.entries.length,'ejercicio','ejercicios')}${minutes(s)?` · ${minutes(s)} min efectivos`:''}</small></div>
 <div class="list">${s.entries.map(entryRow).join('')||`<div class="row"><span class="muted">${isDraft?'Los ejercicios que registres aparecerán aquí.':'Este entreno todavía no tiene ejercicios.'}</span></div>`}${isDraft?'':`<button type="button" class="row action" data-action="add-to-session">${icon('plus')}Añadir ejercicio</button>`}</div>
 ${s.historicalNotes?.length?section('Otras anotaciones originales',s.historicalNotes.map(n=>`<div class="row"><span>${esc(n)}</span></div>`).join('')):''}
 <div class="list">${btn(isDraft?'Descartar sesión':'Eliminar entreno',isDraft?'discard':'delete-session','row danger center')}</div>`,
@@ -278,10 +280,9 @@ async function action(a){
  if(a.startsWith('filter:')){const left=document.querySelector('#chips')?.scrollLeft;filter=a.slice(7);render();const chips=document.querySelector('#chips');if(chips&&left!=null)chips.scrollLeft=left;return;}
  if(a.startsWith('month:')){histMonth=new Date(histMonth.getFullYear(),histMonth.getMonth()+Number(a.slice(6)),1);histDay=null;render();return;}
  if(a==='all-days'){histDay=null;render();return;}
- if(a==='start'){pick={group:null,complement:'Ninguno'};view='groups';render();return;}
+ if(a==='start'){pick=[];view='groups';render();return;}
  if(a==='resume'){selection=draft.selection||null;view=selection&&['grip','setup','active','rating'].includes(draft.phase)?draft.phase:'select';filter=[...draft.groups,'Todos'].includes(filter)?filter:draft.groups[0];render();return;}
- if(a.startsWith('complement:')){pick.complement=a.slice(11);render();return;}
- if(a==='group-start'){const g=pick.group;if(draft&&draft.entries.length&&!confirm('Ya hay un entrenamiento en curso. ¿Descartarlo y empezar otro?'))return;draft={id:uid(),date:new Date().toISOString(),groups:[g,...(allowsComplement(g)&&pick.complement!=='Ninguno'?[pick.complement]:[])],entries:[],phase:'select'};await saveDraft();filter=g;search='';view='select';render();return;}
+ if(a==='group-start'){if(!pick.length){toast('Elige al menos un grupo.');return;}if(draft&&draft.entries.length&&!confirm('Ya hay un entrenamiento en curso. ¿Descartarlo y empezar otro?'))return;draft={id:uid(),date:new Date().toISOString(),groups:[...pick],entries:[],phase:'select'};await saveDraft();filter=pick[0];search='';view='select';render();return;}
  if(a==='summary'){view='session:draft';render();return;}
  if(a==='select'){view='select';selection=null;if(draft){draft.selection=null;draft.phase='select';await saveDraft();}render();return;}
  if(a==='regrip'){view='grip';await saveSelection();render();return;}
@@ -300,7 +301,7 @@ async function action(a){
  if(a==='setup'||a==='active'){view=a;await saveSelection();render();return;}
  if(a==='rate'){if(!Number.isFinite(selection.weight)||selection.weight<0)throw new Error('Introduce un peso válido.');selection.ended=Date.now();view='rating';await saveSelection();render();return;}
  if(a.startsWith('feeling:')){const e=selection.exercise,warmup=selection.isWarmup&&canWarmup(sessions,draft);draft.entries.push({id:uid(),exercise:{id:e.id,name:e.name,group:e.group},weight:selection.weight,reps:selection.toFailure?0:selection.reps,sets:selection.sets,toFailure:selection.toFailure,unilateral:selection.unilateral,dropset:selection.dropset,isWarmup:warmup,grip:selection.grip,cableStation:e.usesCable?selection.cableStation:null,seconds:Math.max(0,(selection.ended-selection.started)/1000),feeling:a.slice(8),order:draft.entries.filter(x=>x.exercise.group===e.group).length+1});selection=null;draft.selection=null;draft.phase='select';await saveDraft();view='select';render();return;}
- if(a==='finish-workout'){if(!draft.entries.length){toast('Añade al menos un ejercicio.');return;}if(!confirm('¿Finalizar entreno?\nSe guardarán los ejercicios de esta sesión en tu historial.'))return;const saved={...draft};delete saved.selection;delete saved.phase;await db.transaction(['sessions','drafts'],tx=>{tx.objectStore('sessions').put({...saved,updatedAt:new Date().toISOString()});tx.objectStore('drafts').delete('active');});await load();view='session:'+saved.id;tab='history';render();toast('Entreno guardado.');return;}
+ if(a==='finish-workout'){if(!draft.entries.length){toast('Añade al menos un ejercicio.');return;}if(!confirm('¿Finalizar entreno?\nSe guardarán los ejercicios de esta sesión en tu historial.'))return;const saved={...draft,groups:trainedGroups(draft)};delete saved.selection;delete saved.phase;await db.transaction(['sessions','drafts'],tx=>{tx.objectStore('sessions').put({...saved,updatedAt:new Date().toISOString()});tx.objectStore('drafts').delete('active');});await load();view='session:'+saved.id;tab='history';render();toast('Entreno guardado.');return;}
  if(a==='discard'){if(confirm('¿Descartar esta sesión sin guardar?')){await db.remove('drafts','active');draft=null;selection=null;view=null;tab='home';render();}return;}
  if(a==='delete-session'){const s=currentSession();if(confirm('¿Eliminar este entreno?\nSe eliminará de tu historial y de las estadísticas. Esta acción no se puede deshacer.')){await db.remove('sessions',s.id);await load();view=null;render();}return;}
  if(a==='new-past'){sessionForm();return;}
@@ -379,7 +380,7 @@ document.addEventListener('click',ev=>{
   const d=b.dataset;
   if(d.step){const input=b.parentElement.querySelector('input'),min=Number(input.min||0),max=Number(input.max||1e6);input.value=Math.min(max,Math.max(min,(Number(input.value)||0)+Number(d.step)));return;}
   if(d.tab){tab=d.tab;view=null;render();}
-  else if(d.group){pick.group=d.group;pick.complement=defaultComplement(d.group);render();}
+  else if(d.group){const g=d.group;if(pick.includes(g))pick=pick.filter(x=>x!==g);else if(pick.length>=MAX_PICK){toast(`Máximo ${MAX_PICK} grupos. Quita uno para elegir otro.`);return;}else pick=[...pick,g];render();}
   else if(d.day){histDay=histDay===d.day?null:d.day;render();}
   else if(d.choose)await choose(d.choose);
   else if(d.pick)manualEntryEditor(exercises.find(e=>e.id===d.pick));
