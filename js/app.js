@@ -1,5 +1,5 @@
 import * as db from './db.js';
-import {groups,uid,num,repsText,dayKey,suggestWeight,antecedents,recentExercises,unilateralMode} from './model.js';
+import {groups,uid,num,repsText,dayKey,suggestWeight,antecedents,recentExercises,unilateralMode,weightAdvice} from './model.js';
 import {exportData,prepareImport,importData} from './transfer.js';
 import * as cloud from './cloud.js';
 import {icon,muscleIcon} from './icons.js';
@@ -186,13 +186,31 @@ ${priorCard()}</div>`,{bar:false,cls:'flush',footer:`<button type="button" class
 function renderActive(){
  const e=selection.exercise,uni=unilateralMode(e)==='always'||(unilateralMode(e)==='optional'&&selection.unilateral),detail=[selection.grip,e.usesCable?'Polea · '+stationName(selection.cableStation):null,uni?'Unilateral':null,selection.dropset?'Dropset':null].filter(Boolean).join(' · ');
  show(`${topbar(back('Ajustes del ejercicio','setup'))}<div class="active-view"><div class="timer" id="timer" aria-label="Tiempo efectivo">0:00</div><h1>${esc(e.name)}</h1>${detail?`<small class="muted">${esc(detail)}</small>`:''}<p class="muted">${plural(selection.sets,'serie','series')} · ${selection.toFailure?'al fallo':selection.reps+' repeticiones'}</p>
-<label class="weight-value"><input id="weight" inputmode="decimal" enterkeyhint="done" value="${num(selection.weight)}" aria-label="Peso en kilos (toca para escribirlo)"><span>kg</span></label>${weightRuler(lastWeight())}</div>${priorCard()}`,
+${adviceChip()}<label class="weight-value"><input id="weight" inputmode="decimal" enterkeyhint="done" value="${num(selection.weight)}" aria-label="Peso en kilos (toca para escribirlo)"><span>kg</span></label>${weightRuler(lastWeight())}</div>${priorCard()}`,
  {bar:false,footer:`<button type="button" class="primary check" data-action="rate" aria-label="Terminar ejercicio">${icon('check')}</button>`});
- updateTimer();fitWeight();setupRuler();
+ updateTimer();fitWeight();setupRuler();markAdvice();
 }
 // Weight ruler: one tick every 0,25 kg, a longer one every kilo and a numbered one every 5 kg.
 // It scrolls under a fixed needle and snaps to the nearest tick; the big number above can be typed.
 const RULER_STEP=.25,RULER_PX=10,RULER_MAX=300;
+// "Súbele / Mantén / Bájale" against last time, with the reason; ticked once the ruler goes that way.
+function currentAdvice(){
+ const e=selection.exercise,mode=unilateralMode(e);
+ return weightAdvice(sessions,e,{date:draft?.date,grip:selection.grip,station:e.usesCable?selection.cableStation:'sala1',unilateral:mode==='always'||(mode==='optional'&&selection.unilateral),reps:selection.reps,sets:selection.sets,toFailure:selection.toFailure,order:(draft?.entries.filter(x=>x.exercise.group===e.group).length||0)+1});
+}
+const ADVICE={up:['arrow-up','Súbele'],keep:['equal','Mantén'],down:['arrow-down','Bájale'],none:['history','Sin referencia reciente']};
+function adviceChip(){
+ const a=currentAdvice();if(!a)return '';
+ return `<div class="advice ${a.verdict}" id="advice" data-ref="${a.ref.weight}" data-verdict="${a.verdict}"><span class="advice-pill">${icon(ADVICE[a.verdict][0])}${ADVICE[a.verdict][1]}<span class="advice-ok">${icon('check')}</span></span><small>${esc(a.reason)}</small></div>`;
+}
+function markAdvice(){
+ const el=document.querySelector('#advice');if(!el)return;
+ const ref=Number(el.dataset.ref),w=selection.weight,v=el.dataset.verdict;
+ el.classList.toggle('followed',(v==='up'&&w>ref)||(v==='down'&&w<ref)||(v==='keep'&&w===ref));
+}
+// Light tap on each kilo while sliding the ruler. iOS Safari has no vibration API, but toggling a
+// native switch gives the system haptic (iOS 18+); Android uses navigator.vibrate.
+const haptic=(()=>{let label;return()=>{try{if(navigator.vibrate){navigator.vibrate(6);return;}if(!label){label=document.createElement('label');label.className='haptic';label.setAttribute('aria-hidden','true');label.innerHTML='<input type="checkbox" switch tabindex="-1">';document.body.append(label);}label.click();}catch{}};})();
 const lastWeight=()=>{const p=antecedents(sessions,selection.exercise,selection.grip,selection.cableStation).find(x=>x.weight>0);return p?p.weight:null;};
 function weightRuler(last){
  const n=RULER_MAX/RULER_STEP,lastIdx=last!=null?Math.round(last/RULER_STEP):-1;let ticks='';
@@ -208,7 +226,8 @@ function setupRuler(){
   if(rulerQuiet||!selection)return;
   const w=Math.min(RULER_MAX,Math.max(0,Math.round(r.scrollLeft/RULER_PX)*RULER_STEP));
   if(w===selection.weight)return;
-  selection.weight=w;const input=document.querySelector('#weight');if(input&&document.activeElement!==input){input.value=num(w);fitWeight();}
+  if(Math.floor(w)!==Math.floor(selection.weight))haptic();
+  selection.weight=w;markAdvice();const input=document.querySelector('#weight');if(input&&document.activeElement!==input){input.value=num(w);fitWeight();}
   clearTimeout(rulerSave);rulerSave=setTimeout(()=>saveSelection(),300);
  },{passive:true});
 }
@@ -344,7 +363,7 @@ async function handleChange(el){
  if(el.id==='import'){const file=el.files[0];if(!file)return;if(file.size>80*1024*1024)throw new Error('La copia supera 80 MB.');pendingImport=await prepareImport(JSON.parse(await file.text()));openDialog(`<header class="sheet-bar">${btn('Cancelar','close','link')}<h2>Importar copia</h2>${btn('Importar','confirm-import','link strong')}</header><div class="list"><div class="row"><span class="row-label">Contenido</span><small class="muted">${plural(pendingImport.sessions.length,'entreno','entrenos')} · ${pendingImport.exercises.length} ejercicios</small></div><label class="row"><span class="row-label">Reemplazar los repetidos</span>${toggle('overwrite',false,'overwrite')}</label></div><p class="footnote">Desactivado: se conservan los entrenos que ya tienes con el mismo identificador.</p>`);return;}
  if(el.name==='failure'&&el.form){el.form.querySelector('[data-reps]')?.classList.toggle('off',el.checked);return;}
  if(!selection||el.closest('dialog'))return;
- if(el.id==='weight'){const value=decimal(el.value);if(!Number.isFinite(value)||value<0||value>10000){el.value=num(selection.weight);throw new Error('Introduce un peso entre 0 y 10.000 kg.');}selection.weight=value;el.value=num(value);fitWeight();rulerTo(value,true);}
+ if(el.id==='weight'){const value=decimal(el.value);if(!Number.isFinite(value)||value<0||value>10000){el.value=num(selection.weight);throw new Error('Introduce un peso entre 0 y 10.000 kg.');}selection.weight=value;el.value=num(value);fitWeight();rulerTo(value,true);markAdvice();}
  for(const [id,key] of [['unilateral','unilateral'],['dropset','dropset']])if(el.id===id)selection[key]=el.checked;
  await saveSelection();
 }
@@ -391,7 +410,7 @@ app.addEventListener('submit',e=>{if(e.target.id!=='login-form')return;e.prevent
 db.onChange(stores=>{if(stores.some(s=>s!=='drafts'))cloud.schedule();});
 cloud.setGuard(()=>!modal.open&&!WORKOUT_VIEWS.includes(view)&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName));
 cloud.onPull(async()=>{await load();if((view?.startsWith('session:')||view==='pick')&&!currentSession())view=null;if(view?.startsWith('exercise:')&&!exercises.some(e=>e.id===view.slice(9)))view=null;render();});
-setInterval(()=>{if(document.visibilityState==='visible')cloud.flush();},120000);
+setInterval(()=>{if(document.visibilityState==='visible')cloud.flush();},300000);
 cloud.onStatus(()=>{const el=document.querySelector('#cloud-status');if(el)el.textContent=cloudText();});
 addEventListener('online',()=>cloud.flush());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')cloud.flush();});

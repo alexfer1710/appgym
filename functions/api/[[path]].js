@@ -7,6 +7,10 @@
 // KV keys:
 //   profile:<id>        -> {id, name, firstName, createdAt}
 //   backup:<id>:<iso>   -> backup JSON (metadata: {at, sessions, bytes})
+//   latest:<id>         -> {at, sessions, bytes} of the newest backup
+//
+// Syncing only reads `latest:<id>` (a cheap KV read). Listing keys is limited to
+// 1,000 a day on the free plan, so it is only used to show the backup history.
 
 const MAX_BYTES = 20 * 1024 * 1024; // KV values are limited to 25 MB.
 const ID_RE = /^[a-z0-9]+(-[a-z0-9]+)+$/;
@@ -49,6 +53,16 @@ async function listBackups(env, id) {
   return items.sort((a, b) => b.at.localeCompare(a.at));
 }
 
+// Newest backup's metadata from its pointer key; profiles saved before the pointer
+// existed fall back to a single listing, which also creates the pointer.
+async function latestBackup(env, id) {
+  const meta = await env.BACKUPS.get(`latest:${id}`, 'json');
+  if (meta) return meta;
+  const newest = (await listBackups(env, id))[0] || null;
+  if (newest) await env.BACKUPS.put(`latest:${id}`, JSON.stringify(newest));
+  return newest;
+}
+
 async function login(request, env) {
   const body = await request.json().catch(() => ({}));
   let p;
@@ -59,8 +73,7 @@ async function login(request, env) {
     profile = { ...p, createdAt: new Date().toISOString() };
     await env.BACKUPS.put(`profile:${p.id}`, JSON.stringify(profile));
   }
-  const backups = created ? [] : await listBackups(env, p.id);
-  return json({ profile, created, latest: backups[0] || null });
+  return json({ profile, created, latest: created ? null : await latestBackup(env, p.id) });
 }
 
 async function saveBackup(request, env, id) {
@@ -74,12 +87,13 @@ async function saveBackup(request, env, id) {
   const at = new Date().toISOString();
   const meta = { at, sessions: data.sessions.length, bytes: text.length };
   await env.BACKUPS.put(`backup:${id}:${at}`, text, { metadata: meta });
+  await env.BACKUPS.put(`latest:${id}`, JSON.stringify(meta));
   return json(meta, 201);
 }
 
 async function loadBackup(env, id, at) {
   if (!(await getProfile(env, id))) return fail('Perfil no encontrado.', 404);
-  if (!at) at = (await listBackups(env, id))[0]?.at;
+  if (!at) at = (await latestBackup(env, id))?.at;
   if (!at) return fail('Todavía no hay copias.', 404);
   const text = await env.BACKUPS.get(`backup:${id}:${at}`);
   if (!text) return fail('Copia no encontrada.', 404);
@@ -100,6 +114,10 @@ export async function onRequest({ request, env }) {
         return json({ backups: await listBackups(env, id) });
       }
       if (parts.length === 3 && request.method === 'POST') return await saveBackup(request, env, id);
+      if (parts.length === 4 && parts[3] === 'head' && request.method === 'GET') {
+        if (!(await getProfile(env, id))) return fail('Perfil no encontrado.', 404);
+        return json({ latest: await latestBackup(env, id) });
+      }
       if (parts.length === 4 && request.method === 'GET')
         return await loadBackup(env, id, parts[3] === 'latest' ? null : decodeURIComponent(parts[3]));
     }

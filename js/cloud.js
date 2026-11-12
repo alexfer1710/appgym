@@ -79,7 +79,7 @@ export function sync(){
  if(!profile())return Promise.resolve(null);
  if(running){again=true;return running;}
  running=(async()=>{try{
-  const st=state(), latest=(await listBackups())[0]||null;
+  const st=state(), latest=await latestBackup();
   const local=await snapshot(), hash=await digest(local);
   // A device that never synced counts as changed only if it has workouts of its own.
   const dirty=st.hash?hash!==st.hash:local.sessions.length>0;
@@ -108,6 +108,8 @@ export function schedule(){if(paused||!profile())return;setState({pending:true})
 export function flush(){if(profile()&&navigator.onLine!==false)sync().catch(()=>{});}
 
 export const listBackups=async()=>(await api(base())).backups;
+// Only the newest backup's date: one cheap read per sync instead of listing every backup.
+const latestBackup=async()=>(await api(`${base()}/head`)).latest||null;
 export async function fetchBackup(at='latest'){return api(`${base()}/${encodeURIComponent(at)}`);}
 
 // Goes back to an older snapshot and makes it the current version everywhere.

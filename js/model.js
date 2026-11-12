@@ -40,3 +40,39 @@ export function recentExercises(exercises,sessions) {
 export const uid=()=>crypto.randomUUID();
 export const num=n=>new Intl.NumberFormat('es-ES',{maximumFractionDigits:2}).format(n);
 export const repsText=e=>e.toFailure?'al fallo':e.reps?`${e.reps} reps`:'— reps';
+
+// Weight advice for the exercise about to be done: "up", "keep" or "down" (never how many
+// kilos: each machine loads differently). It compares today's plan with the last time the
+// same variant (exercise, grip, pulley, one side or both) was done, adding up points:
+//   how it felt: easy +2, perfect 0, too much −2
+//   repetitions: ±0,5 per rep (fewer today adds), at most ±2; ignored if either was to failure
+//   position in the group: −1 per place later (at most −2), +0,5 per place earlier (at most +1)
+//   sets: two or more extra −1, two or more fewer +0,5
+//   age of the reference: 3–6 weeks −1, more than 6 weeks −2; over 90 days no advice
+//   trend of the last two times: twice perfect with the same weight +1, twice easy +1, twice too much −1
+// A total of +1,5 or more means up, −1,5 or less means down, anything else keep.
+const FEEL={'Fácil':2,'Perfecto':0,'Justo':0,'Demasiado':-2};
+export function weightAdvice(sessions,exercise,plan){
+ const today=plan.date?new Date(plan.date):new Date();
+ const refs=antecedents(sessions,exercise,plan.grip,plan.station).filter(e=>e.weight>0&&!!e.unilateral===!!plan.unilateral&&new Date(e.date)<=today);
+ const ref=refs[0];if(!ref)return null;
+ const days=Math.round((new Date(dayKey(today))-new Date(dayKey(ref.date)))/86400000);
+ if(days>90)return {verdict:'none',score:0,ref,factors:[],reason:`Hace ${Math.round(days/30)} meses que no lo haces: tantea el peso.`};
+ const factors=[],add=(points,text)=>{if(points)factors.push({points,text});};
+ const feel=ref.feeling==='Justo'?'Perfecto':ref.feeling;
+ if(feel in FEEL)add(FEEL[feel],`la última vez fue ${feel==='Demasiado'?'demasiado':feel.toLowerCase()}`);
+ if(!ref.toFailure&&!plan.toFailure&&ref.reps>0&&plan.reps>0){const d=plan.reps-ref.reps;add(Math.max(-2,Math.min(2,-d*.5)),d>0?`hoy haces ${d} ${d===1?'repe':'repes'} más`:`hoy haces ${-d} ${d===-1?'repe':'repes'} menos`);}
+ if(ref.order>0&&plan.order>0){const d=plan.order-ref.order;add(d>0?Math.max(-2,-d):Math.min(1,-d*.5),d>0?`hoy va ${plan.order}.º en vez de ${ref.order}.º`:`hoy va ${plan.order}.º en vez de ${ref.order}.º`);}
+ if(ref.sets>0&&plan.sets>0){const d=plan.sets-ref.sets;if(d>=2)add(-1,`hoy haces ${d} series más`);else if(d<=-2)add(.5,`hoy haces ${-d} series menos`);}
+ if(days>42)add(-2,`hace ${Math.round(days/7)} semanas`);else if(days>=21)add(-1,`hace ${Math.round(days/7)} semanas`);
+ const prev=refs[1],prevFeel=prev&&(prev.feeling==='Justo'?'Perfecto':prev.feeling);
+ if(prev&&prevFeel===feel){if(feel==='Perfecto'&&prev.weight===ref.weight)add(1,'dos veces seguidas perfecto con este peso');else if(feel==='Fácil')add(1,'dos veces seguidas fácil');else if(feel==='Demasiado')add(-1,'dos veces seguidas demasiado');}
+ const score=factors.reduce((n,f)=>n+f.points,0),verdict=score>=1.5?'up':score<=-1.5?'down':'keep';
+ // Reason: the strongest factor, plus the strongest one pulling the other way (or the next one).
+ const sorted=[...factors].sort((a,b)=>Math.abs(b.points)-Math.abs(a.points)),first=sorted[0];
+ const second=first&&(sorted.find(f=>Math.sign(f.points)!==Math.sign(first.points))||sorted[1]);
+ const tail=second&&(first.text.startsWith('hoy ')&&second.text.startsWith('hoy ')?second.text.slice(4):second.text);
+ let reason=first?first.text+(second?(Math.sign(second.points)!==Math.sign(first.points)?', pero ':' y ')+tail:''):feel==='Perfecto'?'la última vez fue perfecto con lo mismo':'sin valoración la última vez';
+ reason=reason.charAt(0).toUpperCase()+reason.slice(1)+'.';
+ return {verdict,score,ref,factors,reason};
+}
