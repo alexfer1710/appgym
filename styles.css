@@ -1,11 +1,13 @@
-/* Gym11 — iOS-style look, following the original Swift app (light appearance only). */
+/* Gym11 — Pinterest-inspired look on an iOS structure (light appearance only). */
 :root{
   color-scheme:light;
-  --bg:#f2f2f7;--surface:#fff;--text:#000;--muted:#8a8a8e;--faint:#c4c4c7;
-  --fill:rgba(118,118,128,.12);--sep:rgba(60,60,67,.14);
-  --accent:#007aff;--tint:rgba(0,122,255,.12);--green:#34c759;--mint:#47bf85;--orange:#ff9500;--danger:#ff3b30;
-  --photo:#dcf4fa;--icon-bg:#f2f2f7;
-  --radius:12px;--radius-lg:16px;--radius-xl:28px;
+  /* Pinterest-inspired: white canvas, colour only from content (photos, muscles, data),
+     black pills for actions and selection, soft greys for surfaces, big radii. */
+  --bg:#fff;--surface:#f1f1f1;--text:#111;--muted:#767676;--faint:#bdbdbd;
+  --fill:#e4e4e4;--sep:rgba(0,0,0,.08);
+  --accent:#111;--tint:#ececec;--green:#111;--mint:#111;--orange:#ff9500;--danger:#e0261b;
+  --photo:#dcf4fa;--icon-bg:#f1f1f1;
+  --radius:20px;--radius-lg:20px;--radius-xl:999px;
   --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
@@ -352,3 +354,99 @@ dialog.alert p{font-size:15px;color:var(--muted);margin:0 0 20px}
 @media(min-width:640px){dialog{margin:auto;border-radius:14px}}
 
 a.row{color:inherit}
+
+/* ---------- Pinterest-inspired theme ---------- */
+h1{font-size:32px;font-weight:800;letter-spacing:-.8px}
+h2{font-weight:800;letter-spacing:-.3px}
+.card,.list,.calendar,.month,.stat,.week,.last,.prior,.block{--icon-bg:#fff}
+h2.section{font-size:18px;font-weight:800;color:var(--text);text-transform:none;letter-spacing:-.2px;margin:24px 4px 10px}
+.footnote{margin:8px 4px 0}
+.caption{font-size:15px;font-weight:700;color:var(--text);text-transform:none;letter-spacing:0}
+.caption .plain{color:var(--muted);font-size:13px;font-weight:500}
+.eyebrow{text-transform:none;letter-spacing:0;font-size:14px;font-weight:600}
+.link{color:var(--text);font-weight:600}
+.icon-btn{background:var(--surface);color:var(--text)}
+button.primary{background:#111;font-weight:700;font-size:17px;min-height:56px}
+button.primary:disabled{background:#d6d6d6;color:#fff;opacity:1}
+.list{border-radius:20px}
+.row+.row::before{left:16px;right:16px}
+.row.action{color:var(--text);font-weight:600}
+.row>select,.row>input[type=date]{color:var(--text);font-weight:600}
+.seg{background:var(--surface);border-radius:999px;padding:3px}
+.seg>button,.seg>label>span{border-radius:999px;min-height:34px;font-size:14px}
+.seg>button.on,.seg input:checked+span{background:#111;color:#fff;box-shadow:none}
+.card .seg,.block .seg,.list .seg{background:#e4e4e4}
+.chips button{background:var(--surface);font-weight:600;min-height:38px;border-radius:999px;padding:0 16px}
+.chips button.on{background:#111;color:#fff}
+.choices button{border-radius:16px;background:#fff;min-height:50px}
+.choices button.on{background:#111;color:#fff}
+.switch{background:#dcdcdc}
+.switch:checked{background:#111}
+.search{background:var(--surface);border-radius:999px;padding:0 16px;margin-bottom:14px}
+.search input{min-height:46px}
+.search input::placeholder{color:#767676}
+/* home */
+.home-panel{gap:16px}
+.home-panel .card{box-shadow:none;border:0}
+.week{background:#fff;box-shadow:0 8px 28px rgba(0,0,0,.08)!important}
+.week .today small{color:#fff;background:#111}
+.dot{border-color:#dedede}
+.dot.done{background:#111;border-color:#111}
+.today .dot{border:2px solid #111;color:#111;box-shadow:none}
+.today .dot.done{background:#111;border-color:#111;color:#fff;box-shadow:0 0 0 4px #e6e6e6}
+.month,.stat,.last{background:var(--surface)}
+.monthbars i,.minibars i{background:#dedede}
+.monthbars i.on{background:#111}
+.stat b{font-size:34px;font-weight:800;letter-spacing:-1px}
+.badge-icon.blue{color:#111;background:#fff}
+.badge-icon.orange{background:#fff}
+.tag{color:#111;background:var(--surface)}
+.hero-text h1{font-weight:800;letter-spacing:-1px}
+/* workout */
+.group{background:var(--surface);border:0;border-radius:24px}
+.group.on{background:#111;color:#fff}
+.group.on small{color:#bdbdbd}
+.group.on .order{background:#fff;color:#111}
+.order,.done-mark{background:#111}
+.ex-card{background:none;padding:0;border-radius:0}
+.ex-card .thumb{border-radius:22px}
+.ex-card strong{font-size:15px;font-weight:700;padding:9px 4px 0;min-height:0;line-height:1.25}
+.ex-card small{padding:2px 4px 6px}
+.grid{gap:14px 12px}
+.ex-row{background:none;padding:6px 0;border-radius:0}
+.ex-row .thumb{border-radius:16px;width:60px;height:60px}
+.ex-row strong{font-weight:700}
+.grip{background:var(--surface);border-radius:24px}
+.timer{color:var(--muted);font-weight:600}
+.block,.prior{background:var(--surface);border-radius:20px}
+.float-bar .icon-btn{background:#fff}
+.pill{background:rgba(17,17,17,.6)}
+/* history and sessions */
+.session{background:var(--surface);border-radius:20px}
+.calendar{background:var(--surface);border-radius:24px}
+.cal-grid button{border-radius:12px}
+.cal-grid button.has{background:#fff;font-weight:800}
+.cal-grid button.has i{background:#111}
+.cal-grid button.on{background:#111;color:#fff}
+.summary-title strong{font-size:22px;font-weight:800}
+.entry strong{font-weight:700}
+.row small.accent{color:#111;font-weight:600}
+/* sheets, alerts, toast */
+dialog{background:#fff;border-radius:28px 28px 0 0}
+.sheet-bar{background:#fff}
+.sheet-bar h2{font-weight:800}
+.checks span{background:var(--surface);border:2px solid transparent;border-radius:18px}
+.checks input:checked+span{background:#111;color:#fff;border-color:#111}
+dialog.alert{background:#fff;border-radius:28px}
+.alert-icon{background:var(--surface);color:#111}
+#notice:not(:empty){background:#111}
+:focus-visible{outline-color:#111}
+#foot{background:linear-gradient(rgba(255,255,255,0),#fff 22px)}
+.login .row{background:var(--surface);border-radius:999px}
+.login .list{background:none}
+.home-panel{background:#fff}
+.login .row input{background:none}
+.home-panel .card,.last.static{border-radius:26px}
+.pill{text-transform:none;letter-spacing:0;font-size:13px}
+.list .seg>button,.list .seg>label>span{font-size:13px;padding:0 4px}
+.mood{border-radius:999px;font-weight:700}
