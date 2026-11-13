@@ -478,3 +478,7 @@ body:has(#foot .finish-early) main{padding-bottom:calc(var(--safe-bottom) + 150p
 .today .dot{border-color:var(--brand);color:var(--brand)}
 .today .dot.done{background:#111;border-color:#111;color:#fff;box-shadow:0 0 0 3px #fff,0 0 0 5px var(--brand)}
 .badge-icon.orange{color:var(--brand)}
+/* while a sheet is open the page behind doesn't scroll */
+html.sheet-open,html.sheet-open body{overflow:hidden;overscroll-behavior:none}
+dialog#modal{overscroll-behavior:contain;touch-action:pan-y;will-change:transform}
+dialog#modal:focus,dialog#modal:focus-visible{outline:none}

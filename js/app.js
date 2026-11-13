@@ -74,8 +74,33 @@ function restorePlace(){
  else if(WORKOUT_VIEWS.includes(view)){if(!draft)view=null;else{selection=draft.selection||null;if(view!=='session:draft')view=selection&&['grip','setup','active','rating'].includes(draft.phase)?draft.phase:'select';}}
  else if(view==='pick'&&!sessions.some(x=>x.id===editing))view=null;
 }
-function openDialog(html){modal.innerHTML=`<div class="grabber" aria-hidden="true"></div>${html}`;if(!modal.open)modal.showModal();modal.scrollTop=0;}
+// Bottom sheet. Focus goes to the sheet itself (not its first button, which showed a focus
+// ring on "Cancelar"), the page behind stops scrolling, and dragging down closes it.
+function openDialog(html){
+ modal.innerHTML=`<div class="grabber" aria-hidden="true"></div>${html}`;
+ if(!modal.open)modal.showModal();
+ modal.tabIndex=-1;modal.focus({preventScroll:true});modal.scrollTop=0;
+ document.documentElement.classList.add('sheet-open');
+}
 function close(){if(modal.open)modal.close();}
+modal.addEventListener('close',()=>{document.documentElement.classList.remove('sheet-open');modal.style.transform='';modal.style.transition='';});
+let sheetDrag=null;
+modal.addEventListener('touchstart',e=>{
+ if(modal.scrollTop>0||e.target.closest('input:not([type=checkbox]):not([type=radio]),select,textarea'))return;
+ sheetDrag={y:e.touches[0].clientY,t:Date.now(),dy:0};
+},{passive:true});
+modal.addEventListener('touchmove',e=>{
+ if(!sheetDrag)return;
+ const dy=e.touches[0].clientY-sheetDrag.y;
+ if(dy<=0){if(sheetDrag.dy){sheetDrag.dy=0;modal.style.transform='';}return;}   // scrolling the sheet's content up
+ if(modal.scrollTop>0){sheetDrag=null;return;}
+ e.preventDefault();sheetDrag.dy=dy;modal.style.transition='none';modal.style.transform=`translateY(${dy}px)`;
+},{passive:false});
+modal.addEventListener('touchend',()=>{
+ if(!sheetDrag)return;const {dy,t}=sheetDrag;sheetDrag=null;if(!dy)return;
+ const fast=dy/Math.max(1,Date.now()-t)>.6;modal.style.transition='transform .22s ease-out';
+ if(dy>120||(fast&&dy>40)){modal.style.transform='translateY(110%)';setTimeout(close,200);}else modal.style.transform='';
+});
 
 async function load(){exercises=await db.all('exercises');sessions=(await db.all('sessions')).sort((a,b)=>new Date(b.date)-new Date(a.date));draft=(await db.get('drafts','active'))?.value||null;}
 async function saveDraft(){if(draft)await db.put('drafts',{id:'active',value:draft});}
