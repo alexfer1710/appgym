@@ -60,7 +60,7 @@ function show(html,{footer='',bar=true,cls=''}={}){
  app.className=cls;app.innerHTML=html;foot.innerHTML=footer;
  updateNav(bar);
  document.body.dataset.chrome=footer?'foot':bar?'nav':'none';
- const key=view||tab;if(key!==lastKey){scrollTo(0,0);lastKey=key;}
+ const key=view||tab;if(key!==lastKey){scrollTo(0,0);lastKey=key;nav.classList.remove('compact');lastScrollY=0;}
  try{sessionStorage.setItem('gym11-nav',JSON.stringify({tab,view,editing,filter,pick}));}catch{}
 }
 // After a reload (iOS may restart the app in the background) go back to the same screen.
@@ -87,6 +87,13 @@ function updateNav(bar){
  if(!pill.dataset.ready){pill.style.transition='none';place();pill.offsetWidth;pill.style.transition='';pill.dataset.ready='1';}else place();
 }
 addEventListener('resize',()=>{if(!nav.hidden&&nav.querySelector('.nav-pill'))updateNav(true);});
+// Like Instagram: scrolling down shrinks the tab bar out of the way, scrolling up brings it back.
+let lastScrollY=0;
+addEventListener('scroll',()=>{
+ const y=scrollY,dy=y-lastScrollY;if(Math.abs(dy)<6)return;
+ nav.classList.toggle('compact',dy>0&&y>40&&y+innerHeight<document.documentElement.scrollHeight-4);
+ lastScrollY=y;
+},{passive:true});
 function openDialog(html){
  modal.innerHTML=`<div class="grabber" aria-hidden="true"></div>${html}`;
  if(!modal.open)modal.showModal();
