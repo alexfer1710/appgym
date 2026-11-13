@@ -19,7 +19,7 @@ const DS_SETS=[['last','Última serie'],['all','Todas las series']];
 const DS_DROP=[['half','A la mitad'],['quarter','Un 25 %'],['free','A ojo']];
 const dsDefault=()=>({sets:'last',drop:'half'});
 const dsText=d=>d?`Dropset ${d.sets==='all'?'en todas':'en la última'}${d.drop==='half'?' · a la mitad':d.drop==='quarter'?' · −25 %':''}`:'Dropset';
-const TABS=[['home','house','Inicio'],['history','calendar','Historial'],['catalog','dumbbell','Ejercicios'],['settings','gear','Ajustes']];
+const TABS=[['home','house','Inicio'],['history','calendar','Historial'],['catalog','dumbbell','Ejercicios']];  // Ajustes opens from the gear on Inicio
 const MAIN_GROUPS=['Pecho','Espalda','Hombro','Pierna'];
 const MAX_PICK=4;                                  // quick-access tabs during a workout
 const WORKOUT_VIEWS=['groups','select','grip','setup','active','rating','session:draft'];
@@ -68,6 +68,7 @@ function restorePlace(){
  let saved;try{saved=JSON.parse(sessionStorage.getItem('gym11-nav')||'null');}catch{}
  if(!saved)return;
  if(TABS.some(t=>t[0]===saved.tab))tab=saved.tab;
+ if(saved.tab==='settings'){tab='home';saved.view='settings';}
  editing=saved.editing||null;if(Array.isArray(saved.pick))pick=saved.pick.filter(g=>groups.includes(g)).slice(0,MAX_PICK);if(['Todos',...groups].includes(saved.filter))filter=saved.filter;
  view=saved.view||null;
  if(view==='groups'){if(draft)view=null;}
@@ -124,9 +125,9 @@ function render(){
  if(view==='rating')return renderRating();
  if(view?.startsWith('session:'))return renderSession(view.slice(8));
  if(view?.startsWith('exercise:'))return renderExercise(view.slice(9));
+ if(view==='settings')return renderSettings();
  if(tab==='catalog')return renderLibrary('tab');
  if(tab==='history')return renderHistory();
- if(tab==='settings')return renderSettings();
  renderHome();
 }
 
@@ -147,7 +148,7 @@ function renderHome(){
  const monthLength=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),latest=done[0];
  const name=cloud.profile()?.firstName;
  const dateText=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}),note=monthNote(done,now);
- show(`<header class="cover"><p class="cover-date">${esc(dateText.charAt(0).toUpperCase()+dateText.slice(1))}</p><h1>${name?`Hola, ${esc(name)}.`:'Hola.'}</h1><p class="cover-note">${esc(note)}</p></header>
+ show(`<header class="cover"><div class="cover-top"><p class="cover-date">${esc(dateText.charAt(0).toUpperCase()+dateText.slice(1))}</p>${iconBtn('gear','settings','Ajustes')}</div><h1>${name?`Hola, ${esc(name)}.`:'Hola.'}</h1><p class="cover-note">${esc(note)}</p></header>
 <div class="home-panel">
 <section class="week card raised" aria-label="Esta semana">${['L','M','X','J','V','S','D'].map((letter,i)=>{const k=dayKey(addDays(monday,i)),isToday=k===today,isDone=days.has(k);return `<div class="${isToday?'today':''}"><small>${letter}</small><span class="dot ${isDone?'done':''}">${isDone?icon('check'):isToday?letter:''}</span></div>`;}).join('')}</section>
 <button type="button" class="primary" data-action="${draft?'resume':'start'}">${icon('play')}${draft?'Continuar entrenamiento':'Empezar entrenamiento'}</button>
@@ -339,7 +340,7 @@ ${history.length?section('Tu historial',history.map(x=>`<div class="row tall"><s
 const cloudText=()=>{const st=cloud.state();if(st.pending)return st.error?'Cambios sin subir todavía. Se subirán solos cuando haya conexión.':'Guardando en la nube…';return 'Sincronizado: '+ago(st.lastAt);};
 function renderSettings(){
  const p=cloud.profile();
- show(`<h1>Ajustes</h1>
+ show(`${topbar(back('Inicio','home'))}<h1>Ajustes</h1>
 ${p?section('Tu perfil',`<div class="row"><span class="badge-icon blue">${esc(p.firstName.charAt(0))}</span><span class="grow"><strong>${esc(p.name)}</strong><small id="cloud-status">${esc(cloudText())}</small></span></div><button type="button" class="row" data-action="restore-list"><span class="row-label">Recuperar una copia anterior</span>${chevron()}</button>${btn('Cerrar sesión','logout','row danger')}`,'Tus datos se sincronizan solos: entrando con tu nombre ves lo mismo en cualquier dispositivo. Sin internet puedes seguir usándola y los cambios se suben al volver la conexión.'):''}
 ${section('Entrenamiento',`<label class="row"><span class="row-label">Contar series y descanso</span>${toggle('track-sets',trackSets,'track-sets')}</label>`,'Si lo activas, marcas cada serie al acabarla y entre series sale una cuenta atrás de descanso. Desactivado, solo empiezas el ejercicio y lo terminas con ✓.')}
 ${section('Copias en archivo',`<button type="button" class="row" data-action="export"><span class="row-label">Exportar copia JSON</span>${chevron()}</button><label class="row"><span class="row-label">Importar copia…</span>${chevron()}<input type="file" id="import" accept=".json,application/json" hidden></label>`,'La importación se confirma antes de guardar y evita duplicados. También acepta la exportación de la app de Swift y el histórico de Notas.')}
@@ -379,7 +380,8 @@ function exerciseEditor(ex=null){
 /* ---------- actions ---------- */
 async function action(a){
  if(!a||a==='noop')return;
- if(['home','history','catalog','settings'].includes(a)){tab=a;view=null;render();return;}
+ if(a==='settings'){tab='home';view='settings';render();return;}
+ if(['home','history','catalog'].includes(a)){tab=a;view=null;render();return;}
  if(a==='close'){close();return;}
  if(a.startsWith('layout:')){layout=a.slice(7);await db.put('settings',{id:'layout',value:layout});render();return;}
  if(a.startsWith('filter:')){const left=document.querySelector('#chips')?.scrollLeft;filter=a.slice(7);render();const chips=document.querySelector('#chips');if(chips&&left!=null)chips.scrollLeft=left;return;}

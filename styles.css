@@ -470,12 +470,20 @@ main.home-page{padding-top:calc(var(--safe-top) + 34px)}
 body:has(#foot .rest) main{padding-bottom:calc(var(--safe-bottom) + 250px)}
 body:has(#foot .finish-early) main{padding-bottom:calc(var(--safe-bottom) + 150px)}
 .row.wrap[hidden]{display:none}
-/* Brand accent (orange): only for the last-weight dot and the followed-advice tick (home stays black).
+/* Brand accent (orange): only for the last-weight dot, the followed-advice tick, today and records.
    Black stays the primary colour for actions, selection and text. */
 .advice-ok{background:var(--brand)!important}
 .advice.down .advice-pill{background:rgba(224,38,27,.1);color:#c0281c}
+.week .today small{background:var(--brand);color:#fff}
+.today .dot{border-color:var(--brand);color:var(--brand)}
+.today .dot.done{background:#111;border-color:#111;color:#fff;box-shadow:0 0 0 3px #fff,0 0 0 5px var(--brand)}
 .badge-icon.orange{color:var(--brand)}
 /* while a sheet is open the page behind doesn't scroll */
 html.sheet-open,html.sheet-open body{overflow:hidden;overscroll-behavior:none}
 dialog#modal{overscroll-behavior:contain;touch-action:pan-y;will-change:transform}
 dialog#modal:focus,dialog#modal:focus-visible{outline:none}
+.cover-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.cover-top .cover-date{margin:0}
+.cover-top .icon-btn{width:40px;height:40px}
+.cover-top .icon-btn .icon{width:22px;height:22px}
+nav{width:min(calc(100% - 40px),300px)}
