@@ -141,9 +141,10 @@ function restorePlace(){
 // ring on "Cancelar"), the page behind stops scrolling, and dragging down closes it.
 // Tab bar is built once and kept. The selection works like the iOS 26 tab bar: on a switch
 // (or when you press and drag) the highlight lifts into a glass lens that magnifies the icons
-// under it, travels on a spring, stretches with its speed and drops back into a pill.
-// Physics from the web recreations of the native bar: spring k=380, c=26 (slight overshoot),
-// stretch w+|v|/9, h-|v|/90. Positions come from layout boxes.
+// under it, travels on a spring and drops back into a pill. It keeps its shape while moving
+// (no stretch, no bar swell: together with the lens that read as the old effect).
+// Physics from the web recreations of the native bar: spring k=380, c=26 (slight overshoot).
+// Positions come from layout boxes.
 const lens={x:0,v:0,to:0,lift:0,lv:0,hold:false,raf:0,last:0,drag:null,ready:false};
 const navButtons=()=>[...nav.querySelectorAll('button[data-tab]')];
 const tabCenter=b=>b.offsetLeft+b.offsetWidth/2;
@@ -180,9 +181,9 @@ function stepLens(now){
 }
 function drawLens(){
  const pill=nav.querySelector('.nav-pill'),b=navButtons()[0];if(!pill||!b)return;
- const lift=Math.max(0,Math.min(1.15,lens.lift)),sp=Math.abs(lens.v);
+ const lift=Math.max(0,Math.min(1.15,lens.lift));
  const bw=b.offsetWidth,bh=b.offsetHeight,top=b.offsetTop;
- const w=(bw+Math.min(46,sp/9))*(1+.14*lift),h=(bh-Math.min(8,sp/90))*(1+.28*lift);
+ const w=bw*(1+.14*lift),h=bh*(1+.28*lift);
  const lx=lens.x-w/2,ly=top+bh/2-h/2,M=1+.24*lift;
  pill.style.width=w+'px';pill.style.height=h+'px';pill.style.borderRadius=h/2+'px';
  pill.style.transform=`translate(${lx}px,${ly}px)`;
@@ -190,7 +191,6 @@ function drawLens(){
  const copy=pill.firstElementChild,cy=top+bh/2;
  copy.style.width=nav.clientWidth+'px';copy.style.height=nav.clientHeight+'px';
  copy.style.transform=`translate(${-lx+lens.x-M*lens.x}px,${-ly+cy-M*cy}px) scale(${M})`;
- nav.style.scale=(1+.03*Math.min(1,lift)).toFixed(4);
 }
 // Press and drag along the bar, like iOS: the lens follows the finger and lands on the nearest tab.
 nav.addEventListener('pointerdown',e=>{
