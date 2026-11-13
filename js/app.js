@@ -182,7 +182,7 @@ function drawLens(){
  const pill=nav.querySelector('.nav-pill'),b=navButtons()[0];if(!pill||!b)return;
  const lift=Math.max(0,Math.min(1.15,lens.lift)),sp=Math.abs(lens.v);
  const bw=b.offsetWidth,bh=b.offsetHeight,top=b.offsetTop;
- const w=(bw+Math.min(46,sp/9))*(1+.14*lift),h=(bh-Math.min(8,sp/90))*(1+.2*lift);
+ const w=(bw+Math.min(46,sp/9))*(1+.14*lift),h=(bh-Math.min(8,sp/90))*(1+.28*lift);
  const lx=lens.x-w/2,ly=top+bh/2-h/2,M=1+.24*lift;
  pill.style.width=w+'px';pill.style.height=h+'px';pill.style.borderRadius=h/2+'px';
  pill.style.transform=`translate(${lx}px,${ly}px)`;
