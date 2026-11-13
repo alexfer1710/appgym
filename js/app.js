@@ -139,25 +139,95 @@ function restorePlace(){
 }
 // Bottom sheet. Focus goes to the sheet itself (not its first button, which showed a focus
 // ring on "Cancelar"), the page behind stops scrolling, and dragging down closes it.
-// Tab bar is built once and kept, so the highlight pill can slide to the selected tab.
+// Tab bar is built once and kept. The selection works like the iOS 26 tab bar: on a switch
+// (or when you press and drag) the highlight lifts into a glass lens that magnifies the icons
+// under it, travels on a spring, stretches with its speed and drops back into a pill.
+// Physics from the web recreations of the native bar: spring k=380, c=26 (slight overshoot),
+// stretch w+|v|/9, h-|v|/90. Positions come from layout boxes.
+const lens={x:0,v:0,to:0,lift:0,lv:0,hold:false,raf:0,last:0,drag:null,ready:false};
+const navButtons=()=>[...nav.querySelectorAll('button[data-tab]')];
+const tabCenter=b=>b.offsetLeft+b.offsetWidth/2;
 function updateNav(bar){
  nav.hidden=!bar;if(!bar)return;
- if(!nav.querySelector('.nav-pill'))nav.innerHTML='<span class="nav-pill" aria-hidden="true"></span>'+TABS.map(([id,ic,label])=>`<button type="button" data-tab="${id}" aria-label="${label}">${icon(ic)}<span class="sr-only">${label}</span></button>`).join('');
+ if(!nav.querySelector('.nav-pill')){
+  const items=TABS.map(([id,ic])=>`<span class="nav-copy-item" data-for="${id}">${icon(ic)}</span>`).join('');
+  nav.innerHTML=`<span class="nav-pill" aria-hidden="true"><span class="nav-copy">${items}</span></span>`+TABS.map(([id,ic,label])=>`<button type="button" data-tab="${id}" aria-label="${label}">${icon(ic)}<span class="sr-only">${label}</span></button>`).join('');
+  lens.ready=false;
+ }
  let active=null;
- nav.querySelectorAll('button[data-tab]').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('active',on);b.setAttribute('aria-current',on?'page':'false');if(on)active=b;});
- const pill=nav.querySelector('.nav-pill'),place=()=>{pill.style.width=active.offsetWidth+'px';pill.style.transform=`translateX(${active.offsetLeft}px)`;};
- const idx=[...nav.querySelectorAll('button[data-tab]')].indexOf(active),prev=Number(pill.dataset.idx??idx);
- if(!pill.dataset.ready){pill.style.transition='none';place();pill.offsetWidth;pill.style.transition='';pill.dataset.ready='1';}
- else if(prev!==idx&&pill.animate&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
-  // Liquid-glass switch: the pill stretches over both tabs, then settles on the new one.
-  const from=parseFloat(pill.style.transform.replace(/[^\d.-]/g,''))||0,w=active.offsetWidth,to=active.offsetLeft,lo=Math.min(from,to),span=Math.abs(to-from)+w;
-  pill.style.transition='none';place();
-  pill.animate([{transform:`translateX(${from}px)`,width:w+'px'},{transform:`translateX(${lo}px) scaleY(1.06)`,width:span+'px',offset:.45},{transform:`translateX(${to}px)`,width:w+'px'}],{duration:440,easing:'cubic-bezier(.3,.7,.2,1)'}).finished.finally(()=>{pill.style.transition='';});
-  nav.classList.add('switching');clearTimeout(updateNav.t);updateNav.t=setTimeout(()=>nav.classList.remove('switching'),380);
- }else place();
- pill.dataset.idx=idx;
+ navButtons().forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('active',on);b.setAttribute('aria-current',on?'page':'false');if(on)active=b;});
+ nav.querySelectorAll('.nav-copy-item').forEach(s=>s.classList.toggle('active',s.dataset.for===tab));
+ if(!active)return;
+ const to=tabCenter(active);
+ if(!lens.ready||reducedMotion()){lens.x=lens.to=to;lens.v=0;lens.lift=0;lens.ready=true;drawLens();return;}
+ if(lens.drag)return;                                 // the finger is in charge
+ if(Math.abs(to-lens.to)>1){lens.to=to;lens.hold=true;startLens();}
+ else{lens.to=to;drawLens();}
 }
-addEventListener('resize',()=>{if(!nav.hidden&&nav.querySelector('.nav-pill'))updateNav(true);});
+function startLens(){if(!lens.raf){lens.last=performance.now();lens.raf=requestAnimationFrame(stepLens);}}
+function stepLens(now){
+ let dt=Math.min(.032,(now-lens.last)/1000);lens.last=now;
+ const k=lens.drag?900:380,c=lens.drag?55:26;          // the finger: snappier, a little liquid lag
+ for(const h of [dt/2,dt/2]){
+  lens.v+=(-k*(lens.x-lens.to)-c*lens.v)*h;lens.x+=lens.v*h;
+  const lt=lens.hold?1:0;lens.lv+=(-520*(lens.lift-lt)-30*lens.lv)*h;lens.lift+=lens.lv*h;
+ }
+ if(!lens.drag&&Math.abs(lens.x-lens.to)<1.5&&Math.abs(lens.v)<40)lens.hold=false;   // arrived: drop the lens
+ const done=!lens.hold&&!lens.drag&&Math.abs(lens.x-lens.to)<.3&&Math.abs(lens.v)<2&&Math.abs(lens.lift)<.004&&Math.abs(lens.lv)<.05;
+ if(done){lens.x=lens.to;lens.v=0;lens.lift=0;lens.lv=0;}
+ drawLens();
+ lens.raf=done?0:requestAnimationFrame(stepLens);
+}
+function drawLens(){
+ const pill=nav.querySelector('.nav-pill'),b=navButtons()[0];if(!pill||!b)return;
+ const lift=Math.max(0,Math.min(1.15,lens.lift)),sp=Math.abs(lens.v);
+ const bw=b.offsetWidth,bh=b.offsetHeight,top=b.offsetTop;
+ const w=(bw+Math.min(46,sp/9))*(1+.14*lift),h=(bh-Math.min(8,sp/90))*(1+.2*lift);
+ const lx=lens.x-w/2,ly=top+bh/2-h/2,M=1+.24*lift;
+ pill.style.width=w+'px';pill.style.height=h+'px';pill.style.borderRadius=h/2+'px';
+ pill.style.transform=`translate(${lx}px,${ly}px)`;
+ pill.style.setProperty('--lift',Math.min(1,lift).toFixed(3));
+ const copy=pill.firstElementChild,cy=top+bh/2;
+ copy.style.width=nav.clientWidth+'px';copy.style.height=nav.clientHeight+'px';
+ copy.style.transform=`translate(${-lx+lens.x-M*lens.x}px,${-ly+cy-M*cy}px) scale(${M})`;
+ nav.style.scale=(1+.03*Math.min(1,lift)).toFixed(4);
+}
+// Press and drag along the bar, like iOS: the lens follows the finger and lands on the nearest tab.
+nav.addEventListener('pointerdown',e=>{
+ if(!e.isPrimary||!lens.ready||reducedMotion())return;
+ const d=lens.drag={id:e.pointerId,x0:e.clientX,on:false,idx:-1,moved:false};
+ d.timer=setTimeout(()=>beginDrag(e.clientX),250);
+});
+function navX(clientX){return clientX-nav.getBoundingClientRect().left;}
+function beginDrag(clientX){
+ const d=lens.drag;if(!d||d.on)return;d.on=true;clearTimeout(d.timer);
+ try{nav.setPointerCapture(d.id);}catch{}
+ lens.hold=true;followFinger(clientX);haptic();startLens();
+}
+function followFinger(clientX){
+ const bs=navButtons(),lo=tabCenter(bs[0]),hi=tabCenter(bs[bs.length-1]);let x=navX(clientX)/(nav.getBoundingClientRect().width/nav.offsetWidth);
+ if(x<lo)x=lo-Math.sqrt(lo-x)*3;else if(x>hi)x=hi+Math.sqrt(x-hi)*3;   // rubber band past the ends
+ lens.to=x;
+ const idx=nearestTab(x);if(idx!==lens.drag.idx){if(lens.drag.idx>=0)haptic();lens.drag.idx=idx;}
+}
+function nearestTab(x){const bs=navButtons();let best=0;bs.forEach((b,i)=>{if(Math.abs(tabCenter(b)-x)<Math.abs(tabCenter(bs[best])-x))best=i;});return best;}
+nav.addEventListener('pointermove',e=>{
+ const d=lens.drag;if(!d||e.pointerId!==d.id)return;
+ if(!d.on&&Math.abs(e.clientX-d.x0)>8)beginDrag(e.clientX);
+ if(d.on){d.moved=true;followFinger(e.clientX);startLens();}
+});
+function endDrag(e,cancel){
+ const d=lens.drag;if(!d||e.pointerId!==d.id)return;clearTimeout(d.timer);lens.drag=null;
+ if(!d.on)return;                                     // a plain tap: the click switches tabs
+ nav.dataset.dragged='1';setTimeout(()=>delete nav.dataset.dragged,350);
+ const bs=navButtons(),idx=cancel?bs.findIndex(b=>b.dataset.tab===tab):nearestTab(lens.x+lens.v*.08);
+ lens.to=tabCenter(bs[idx]);lens.hold=true;startLens();
+ if(!cancel&&bs[idx].dataset.tab!==tab){tab=bs[idx].dataset.tab;view=null;render();}
+}
+nav.addEventListener('pointerup',e=>endDrag(e,false));
+nav.addEventListener('pointercancel',e=>endDrag(e,true));
+nav.addEventListener('click',e=>{if(nav.dataset.dragged){e.stopPropagation();e.preventDefault();}},true);
+addEventListener('resize',()=>{if(!nav.hidden&&nav.querySelector('.nav-pill')){lens.ready=false;updateNav(true);}});
 // Like Instagram: scrolling down shrinks the tab bar out of the way, scrolling up brings it back.
 let lastScrollY=0;
 addEventListener('scroll',()=>{

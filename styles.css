@@ -58,11 +58,20 @@ body:has(#foot .foot-note) main{padding-bottom:calc(var(--safe-bottom) + 120px)}
 /* Floating glass tab bar: content scrolls underneath and shows through. */
 nav{position:fixed;z-index:10;left:50%;transform:translateX(-50%);bottom:max(14px,calc(var(--safe-bottom) - 6px));width:min(calc(100% - 40px),360px);display:flex;gap:4px;padding:6px;border-radius:32px;background:rgba(255,255,255,.5);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);border:.5px solid rgba(0,0,0,.07);box-shadow:0 10px 30px rgba(0,0,0,.12),0 1px 3px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.75)}
 nav:empty,nav[hidden]{display:none}
-nav button{position:relative;z-index:1;flex:1;height:50px;border-radius:26px;display:grid;place-items:center;color:#8e8e93;transition:color .25s}
+nav button{position:relative;z-index:1;-webkit-tap-highlight-color:transparent;flex:1;height:50px;border-radius:26px;display:grid;place-items:center;color:#8e8e93;transition:color .25s}
 nav button .icon{width:26px;height:26px;stroke-width:1.9}
 nav button.active{color:#111}
-.nav-pill{position:absolute;left:0;top:6px;height:50px;border-radius:26px;background:rgba(0,0,0,.075);transition:transform .38s cubic-bezier(.3,1.25,.4,1),width .38s;pointer-events:none}
-@media(prefers-reduced-motion:reduce){.nav-pill{transition:none}}
+/* selection: a grey pill at rest that lifts into a magnifying glass lens while it moves (driven from JS) */
+.nav-pill{--lift:0;position:absolute;left:0;top:0;z-index:2;overflow:hidden;pointer-events:none;will-change:transform,width,height;
+ background:rgba(calc(0 + 252*var(--lift)),calc(0 + 252*var(--lift)),calc(0 + 252*var(--lift)),calc(.075 + .845*var(--lift)));
+ box-shadow:0 calc(8px*var(--lift)) calc(22px*var(--lift)) rgba(0,0,0,calc(.16*var(--lift))),inset 0 0 0 .5px rgba(0,0,0,calc(.08*var(--lift))),inset 0 1.5px 0 rgba(255,255,255,var(--lift)),inset 0 -1px 2px rgba(0,0,0,calc(.05*var(--lift)))}
+.nav-pill::after{content:"";position:absolute;left:16%;right:16%;top:6%;height:36%;border-radius:50%;background:linear-gradient(rgba(255,255,255,.9),rgba(255,255,255,0));opacity:calc(.8*var(--lift))}
+.nav-copy{position:absolute;left:0;top:0;display:flex;gap:4px;padding:6px;box-sizing:border-box;transform-origin:0 0;opacity:var(--lift)}
+.nav-copy-item{flex:1;height:50px;display:grid;place-items:center;color:#3c3c43}
+.nav-copy-item .icon{width:26px;height:26px;stroke-width:1.9}
+.nav-copy-item.active{color:#111}
+.nav-copy-item.active .icon{stroke-width:2.3;fill:currentColor;fill-opacity:.14}
+nav{touch-action:none;-webkit-user-select:none;user-select:none}
 nav button.active .icon{stroke-width:2.3;fill:currentColor;fill-opacity:.14}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 #foot{position:fixed;inset:auto 0 0;z-index:9;background:var(--bg);padding:12px max(20px,calc(50% - 280px)) calc(var(--safe-bottom) + 12px);display:flex;flex-direction:column;gap:10px}
@@ -506,11 +515,6 @@ nav.compact{transform:translateX(-50%) scale(.84);background:rgba(255,255,255,.5
 .ex-row strong{font-weight:600}
 /* neutral backgrounds behind illustrations; white where the row itself is grey */
 .list .thumb{--photo:#fff}
-/* iOS 26-style tab switch: the bar turns to clear glass for a moment while the pill stretches across */
-nav.switching{background:rgba(255,255,255,.3);-webkit-backdrop-filter:saturate(200%) blur(14px);backdrop-filter:saturate(200%) blur(14px);box-shadow:0 12px 34px rgba(0,0,0,.14),inset 0 0 0 1px rgba(255,255,255,.85),inset 0 1px 0 rgba(255,255,255,.95);transform:translateX(-50%) scale(1.035)}
-nav.switching button{color:rgba(60,60,67,.45)}
-nav.switching button.active{color:#111}
-nav.switching .nav-pill{box-shadow:inset 0 0 0 1px rgba(255,255,255,.7)}
 /* ---------- iOS-style navigation ---------- */
 #app{position:relative;z-index:1;background:var(--bg)}
 nav{view-transition-name:tabbar}
@@ -530,7 +534,7 @@ body.edge-swiping #app{box-shadow:-12px 0 32px rgba(0,0,0,.14)}
 body.edge-swiping{overflow:hidden}
 /* touch feedback: things dim or press in like native controls */
 button,a.row,label.row{-webkit-touch-callout:none}
-.link:active,.icon-btn:active,.row:active,.chips button:active,.seg>button:active,nav button:active,.choices button:active{opacity:.55;transition:opacity 0s}
+.link:active,.icon-btn:active,.row:active,.chips button:active,.seg>button:active,.choices button:active{opacity:.55;transition:opacity 0s}
 .link,.icon-btn,.row,.chips button,.seg>button,.choices button{transition:opacity .25s}
 .group:active,.ex-card:active,.ex-row:active,.session:active,.grip:active,.last:active,.month:active{transform:scale(.97)}
 .group,.ex-card,.ex-row,.session,.grip,.last,.month{transition:transform .2s cubic-bezier(.3,.7,.2,1)}
