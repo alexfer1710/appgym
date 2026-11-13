@@ -74,12 +74,33 @@ function navDirection(key){
 function show(html,opts={}){
  const key=view||tab,top=navStack[navStack.length-1];
  if(top&&key!==lastKey){top.html=app.innerHTML;top.cls=app.className;top.scroll=scrollY;}
- const dir=navDirection(key),paint=()=>paintScreen(html,opts);
+ const pills=key===lastKey?capturePills():{};
+ const dir=navDirection(key),paint=()=>{paintScreen(html,opts);placePills(pills);};
  if((dir==='forward'||dir==='back')&&!skipTransition&&document.startViewTransition&&!reducedMotion()){
   document.documentElement.dataset.nav=dir;
   document.startViewTransition(paint).finished.finally(()=>{delete document.documentElement.dataset.nav;});
  }else paint();
  skipTransition=false;
+}
+// Sliding selection pills for segmented controls and filter chips, like the tab bar.
+const pillHosts=root=>[...root.querySelectorAll('.seg,.chips')];
+const pillSelected=c=>c.querySelector(':scope>button.on, :scope>label>input:checked+span');
+function rectIn(c,el){const a=c.getBoundingClientRect(),b=el.getBoundingClientRect();return {x:b.left-a.left+c.scrollLeft,y:b.top-a.top+c.scrollTop,w:b.width,h:b.height};}
+function capturePills(){const m={};[app,foot].forEach((r,ri)=>pillHosts(r).forEach((c,i)=>{const s=pillSelected(c);if(s)m[ri+':'+i]=rectIn(c,s);}));return m;}
+function placePills(prev={}){
+ [app,foot,modal].forEach((r,ri)=>pillHosts(r).forEach((c,i)=>{
+  const s=pillSelected(c);let p=c.querySelector(':scope>.slide-pill');
+  if(!s){p?.remove();c.classList.remove('has-pill');return;}
+  const from=p?.dataset.r?JSON.parse(p.dataset.r):prev[ri+':'+i];
+  if(!p){p=document.createElement('span');p.className='slide-pill';p.setAttribute('aria-hidden','true');c.prepend(p);}
+  c.classList.add('has-pill');
+  const to=rectIn(c,s);
+  Object.assign(p.style,{width:to.w+'px',height:to.h+'px',transform:`translate(${to.x}px,${to.y}px)`});p.dataset.r=JSON.stringify(to);
+  if(from&&Math.abs(from.x-to.x)>1&&p.animate&&!reducedMotion()){
+   const lo=Math.min(from.x,to.x),span=Math.max(from.x+from.w,to.x+to.w)-lo;
+   p.animate([{transform:`translate(${from.x}px,${from.y}px)`,width:from.w+'px'},{transform:`translate(${lo}px,${to.y}px) scaleY(1.06)`,width:span+'px',offset:.45},{transform:`translate(${to.x}px,${to.y}px)`,width:to.w+'px'}],{duration:420,easing:'cubic-bezier(.3,.7,.2,1)'});
+  }
+ }));
 }
 function paintScreen(html,{footer='',bar=true,cls=''}={}){
  app.className=cls;app.innerHTML=html;foot.innerHTML=footer;
@@ -168,6 +189,7 @@ addEventListener('scroll',()=>{
 function openDialog(html){
  modal.innerHTML=`<div class="grabber" aria-hidden="true"></div>${html}`;
  if(!modal.open)modal.showModal();
+ requestAnimationFrame(()=>placePills());
  modal.tabIndex=-1;modal.focus({preventScroll:true});modal.scrollTop=0;
  document.documentElement.classList.add('sheet-open');
 }
@@ -595,7 +617,7 @@ document.addEventListener('click',ev=>{
   else await action(d.action);
  });
 });
-document.addEventListener('change',e=>safe(()=>handleChange(e.target)));
+document.addEventListener('change',e=>{if(e.target.type==='radio'&&e.target.closest('.seg'))placePills();safe(()=>handleChange(e.target));});
 document.addEventListener('touchstart',()=>{},{passive:true});   // lets :active styles show on iOS
 document.addEventListener('input',e=>{if(e.target.id==='weight')fitWeight();if(e.target.id==='search'){search=e.target.value;const start=e.target.selectionStart;render();const input=document.querySelector('#search');input.focus();input.setSelectionRange(start,start);}});
 modal.addEventListener('submit',e=>{e.preventDefault();safe(()=>submit(e.target));});
