@@ -5,7 +5,7 @@
      black pills for actions and selection, soft greys for surfaces, big radii. */
   --bg:#fff;--surface:#f1f1f1;--text:#111;--muted:#767676;--faint:#bdbdbd;
   --fill:#e4e4e4;--sep:rgba(0,0,0,.08);
-  --accent:#111;--tint:#ececec;--green:#111;--mint:#111;--orange:#ff9500;--danger:#e0261b;
+  --accent:#111;--tint:#ececec;--green:#111;--mint:#111;--brand:#FF5A1F;--orange:var(--brand);--danger:#e0261b;
   --photo:#dcf4fa;--icon-bg:#f1f1f1;
   --radius:20px;--radius-lg:20px;--radius-xl:999px;
   --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
@@ -470,3 +470,11 @@ main.home-page{padding-top:calc(var(--safe-top) + 34px)}
 body:has(#foot .rest) main{padding-bottom:calc(var(--safe-bottom) + 250px)}
 body:has(#foot .finish-early) main{padding-bottom:calc(var(--safe-bottom) + 150px)}
 .row.wrap[hidden]{display:none}
+/* Brand accent (orange): only for the last-weight dot, the followed-advice tick, today and records.
+   Black stays the primary colour for actions, selection and text. */
+.advice-ok{background:var(--brand)!important}
+.advice.down .advice-pill{background:rgba(224,38,27,.1);color:#c0281c}
+.week .today small{background:var(--brand);color:#fff}
+.today .dot{border-color:var(--brand);color:var(--brand)}
+.today .dot.done{background:#111;border-color:#111;color:#fff;box-shadow:0 0 0 3px #fff,0 0 0 5px var(--brand)}
+.badge-icon.orange{color:var(--brand)}
