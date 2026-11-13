@@ -39,6 +39,11 @@ export function icon(name, cls = '') {
   return `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${line[name] || ''}</svg>`;
 }
 
+// Very light tint of a muscle colour, used as the background behind exercise illustrations.
+export function muscleTint(group, amount = 0.16) {
+  const hex = (muscleColors[group] || '#9AA0A6').slice(1), c = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
+  return '#' + c.map(v => Math.round(255 - (255 - v) * amount).toString(16).padStart(2, '0')).join('');
+}
 export const muscleColors = {
   Pecho: '#E85D64', Espalda: '#E5B93F', 'Tríceps': '#D6AD32', 'Bíceps': '#36A782', Hombro: '#508BE8',
   Pierna: '#4CAF70', Abdomen: '#35A6B5', 'Glúteo': '#E874B0', Antebrazo: '#8B69C6',

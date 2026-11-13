@@ -493,3 +493,13 @@ nav{width:min(calc(100% - 40px),300px)}
 nav{transition:transform .32s cubic-bezier(.3,.7,.2,1),padding .32s,background .32s,box-shadow .32s;transform-origin:50% 100%}
 nav.compact{transform:translateX(-50%) translateY(6px) scale(.82);background:rgba(255,255,255,.5);box-shadow:0 6px 18px rgba(0,0,0,.1)}
 @media(prefers-reduced-motion:reduce){nav{transition:none}}
+/* exercises page */
+.head-tools{display:flex;gap:8px}
+.title-row .head-tools{margin-bottom:10px}
+.chips button{display:inline-flex;align-items:center;gap:7px}
+.chip-dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chips button.on .chip-dot{box-shadow:0 0 0 1.5px #fff}
+.lib-section{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:22px 2px 12px}
+.chips+.grid,.chips+.stack,.seg+.grid,.seg+.stack{margin-top:18px}
+.ex-card strong{font-weight:600;font-size:15px;letter-spacing:-.1px;padding:9px 4px 8px;color:#111}
+.ex-row strong{font-weight:600}

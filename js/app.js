@@ -2,7 +2,7 @@ import * as db from './db.js';
 import {groups,uid,num,repsText,dayKey,suggestWeight,antecedents,recentExercises,unilateralMode,weightAdvice} from './model.js';
 import {exportData,prepareImport,importData} from './transfer.js';
 import * as cloud from './cloud.js';
-import {icon,muscleIcon} from './icons.js';
+import {icon,muscleIcon,muscleTint,muscleColors} from './icons.js';
 
 const app=document.querySelector('#app'),nav=document.querySelector('#nav'),foot=document.querySelector('#foot'),modal=document.querySelector('#modal');
 let exercises=[],sessions=[],draft=null,tab='home',view=null,selection=null,layout='grid',filter='Todos',search='',persisted=false,waitingWorker=null;
@@ -44,7 +44,7 @@ const btn=(label,action,cls='')=>`<button type="button" class="${cls}" data-acti
 const iconBtn=(name,action,label)=>`<button type="button" class="icon-btn" data-action="${action}" aria-label="${label}">${icon(name)}</button>`;
 const back=(label,action)=>`<button type="button" class="link back" data-action="${action}">${icon('chevron-left')}${esc(label)}</button>`;
 const topbar=(left='',right='')=>`<div class="topbar">${left||'<span></span>'}${right||'<span></span>'}</div>`;
-const thumb=(e,cls='')=>`<span class="thumb ${cls}">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy">`:muscleIcon(e.group)}</span>`;
+const thumb=(e,cls='')=>`<span class="thumb ${cls}" style="--photo:${muscleTint(e.group)}">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy">`:muscleIcon(e.group)}</span>`;
 const chevron=()=>icon('chevron-right','chev');
 const section=(title,body,note='')=>`${title?`<h2 class="section">${esc(title)}</h2>`:''}<div class="list">${body}</div>${note?`<p class="footnote">${note}</p>`:''}`;
 const row=(label,control,cls='')=>`<div class="row ${cls}"><span class="row-label">${label}</span>${control}</div>`;
@@ -192,21 +192,27 @@ function renderGroups(){
 /* ---------- exercise library: tab, workout selection, add to past workout ---------- */
 function exerciseCard(e,mode){
  const attr=mode==='pick'?'pick':mode==='workout'?'choose':'exercise',done=mode==='workout'&&draft.entries.some(x=>x.exercise.id===e.id);
- if(layout==='list')return `<button type="button" class="card ex-row" data-${attr}="${esc(e.id)}">${thumb(e)}<span class="grow"><strong>${esc(e.name)}</strong><small>${esc(e.group)}</small></span>${done?icon('check-circle','accent'):chevron()}</button>`;
- return `<button type="button" class="card ex-card" data-${attr}="${esc(e.id)}">${thumb(e)}${done?`<span class="done-mark">${icon('check')}</span>`:''}<strong>${esc(e.name)}</strong><small>${esc(e.group)}</small></button>`;
+ if(layout==='list')return `<button type="button" class="card ex-row" data-${attr}="${esc(e.id)}">${thumb(e)}<span class="grow"><strong>${esc(e.name)}</strong></span>${done?icon('check-circle','accent'):chevron()}</button>`;
+ return `<button type="button" class="card ex-card" data-${attr}="${esc(e.id)}">${thumb(e)}${done?`<span class="done-mark">${icon('check')}</span>`:''}<strong>${esc(e.name)}</strong></button>`;
 }
 function renderLibrary(mode){
  const inWorkout=mode==='workout',picking=mode==='pick';
  const list=recentExercises(exercises.filter(e=>!e.deleted),sessions).filter(e=>(filter==='Todos'||e.group===filter)&&e.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()));
  const s=picking?currentSession():null;
- const head=inWorkout?`${topbar(back('Inicio','home'),iconBtn('plus','new-exercise','Nuevo ejercicio'))}<h1>Elige ejercicio</h1>`
-  :picking?`${topbar(back('Entreno','back-to-session'),iconBtn('plus','new-exercise','Nuevo ejercicio'))}<h1>Añadir ejercicio</h1><p class="muted sub">${esc(s.groups.join(' + '))} · ${esc(date(s.date))} · ${plural(s.entries.length,'ejercicio','ejercicios')}</p>`
-  :`<div class="title-row"><h1>Ejercicios</h1>${iconBtn('plus','new-exercise','Nuevo ejercicio')}</div>`;
+ const layoutBtn=iconBtn(layout==='grid'?'list':'grid','layout:'+(layout==='grid'?'list':'grid'),layout==='grid'?'Ver como lista':'Ver como cuadrícula');
+ const tools=`<span class="head-tools">${layoutBtn}${iconBtn('plus','new-exercise','Nuevo ejercicio')}</span>`;
+ const head=inWorkout?`${topbar(back('Inicio','home'),tools)}<h1>Elige ejercicio</h1>`
+  :picking?`${topbar(back('Entreno','back-to-session'),tools)}<h1>Añadir ejercicio</h1><p class="muted sub">${esc(s.groups.join(' + '))}, ${esc(date(s.date))}</p>`
+  :`<div class="title-row"><h1>Ejercicios</h1>${tools}</div>`;
+ const dot=g=>g==='Todos'?'':`<i class="chip-dot" style="background:${muscleColors[g]}"></i>`;
  const filters=inWorkout?segButtons([...draft.groups,'Todos'].map(g=>['filter:'+g,esc(g),filter===g])).replace('class="seg"',`class="seg tabs-${draft.groups.length+1}"`)
-  :`<div class="chips" id="chips">${['Todos',...groups].map(g=>`<button type="button" data-action="filter:${esc(g)}" class="${filter===g?'on':''}">${esc(g)}</button>`).join('')}</div>`;
+  :`<div class="chips" id="chips">${['Todos',...groups].map(g=>`<button type="button" data-action="filter:${esc(g)}" class="${filter===g?'on':''}">${dot(g)}${esc(g)}</button>`).join('')}</div>`;
+ // Without a search, split into what you've done in the last three weeks and the rest.
+ const since=Date.now()-21*86400000,recentIds=new Set(sessions.filter(x=>new Date(x.date)>=since).flatMap(x=>x.entries.map(e=>e.exercise.id)));
+ const recent=search?[]:list.filter(e=>recentIds.has(e.id)),rest=search?list:list.filter(e=>!recentIds.has(e.id));
+ const block=(title,items)=>items.length?`${title?`<h2 class="lib-section">${title}</h2>`:''}<div class="${layout==='grid'?'grid':'stack'}">${items.map(e=>exerciseCard(e,mode)).join('')}</div>`:'';
  show(`${head}<label class="search">${icon('search')}<input id="search" type="search" placeholder="Buscar ejercicio" value="${esc(search)}" aria-label="Buscar ejercicio" autocomplete="off" autocorrect="off" spellcheck="false"></label>${filters}
-<div class="between meta-line"><small class="muted">${inWorkout?plural(draft.entries.length,'ejercicio hecho','ejercicios hechos'):`${plural(list.length,'ejercicio','ejercicios')} · recientes primero`}</small>${segButtons([['layout:grid',icon('grid'),layout==='grid'],['layout:list',icon('list'),layout==='list']]).replace('class="seg"','class="seg compact" aria-label="Presentación"')}</div>
-<div class="${layout==='grid'?'grid':'stack'}">${list.map(e=>exerciseCard(e,mode)).join('')}</div>${list.length?'':`<div class="empty">${icon('dumbbell')}<strong>No hay ejercicios</strong><p>Prueba con otro nombre o añade uno con +.</p></div>`}`,
+${block(recent.length?'Hechos hace poco':'',recent)}${block(recent.length&&rest.length?'Más ejercicios':'',rest)}${list.length?'':`<div class="empty">${icon('dumbbell')}<strong>No hay ejercicios</strong><p>Prueba con otro nombre o añade uno con +.</p></div>`}`,
  {bar:!inWorkout,footer:inWorkout?`<button type="button" class="done-row" data-action="summary"><span>Ejercicios hechos (${draft.entries.length})</span>${icon('chevron-up')}</button><button type="button" class="primary" data-action="finish-workout" ${draft.entries.length?'':'disabled'}>Finalizar</button>`:''});
 }
 async function choose(id){
@@ -226,7 +232,7 @@ function priorCard(){
 function renderSetup(){
  const e=selection.exercise,fixed=e.name.startsWith('Curl 15')?15:e.name.startsWith('Curl 21')?21:null;
  const customSets=![3,4,5].includes(selection.sets),customReps=!selection.toFailure&&![6,8,10,12].includes(selection.reps);
- show(`<div class="setup-photo">${e.image?`<img src="${esc(e.image)}" alt="">`:muscleIcon(e.group)}<div class="float-bar">${iconBtn('chevron-left','select','Volver a los ejercicios')}</div><span class="pill">${icon('dumbbell')}${esc(e.group)}</span></div>
+ show(`<div class="setup-photo" style="--photo:${muscleTint(e.group)}">${e.image?`<img src="${esc(e.image)}" alt="">`:muscleIcon(e.group)}<div class="float-bar">${iconBtn('chevron-left','select','Volver a los ejercicios')}</div><span class="pill">${icon('dumbbell')}${esc(e.group)}</span></div>
 <div class="pad">
 <div class="setup-head"><div class="grow"><h1>${esc(e.name)}</h1>${selection.grip?`<button type="button" class="link grip-link" data-action="${e.grips.length>1?'regrip':'noop'}">Agarre: ${esc(selection.grip)}${e.grips.length>1?' · Cambiar':''}</button>`:''}</div>${unilateralMode(e)==='optional'?`<label class="mini-toggle"><small>Unilateral</small>${toggle('unilateral',selection.unilateral,'unilateral')}</label>`:unilateralMode(e)==='always'?'<span class="tag">Unilateral</span>':''}</div>
 ${e.usesCable?`<section class="card block"><div class="caption">Polea</div>${segButtons(STATIONS.map(([v,l])=>['station:'+v,l,selection.cableStation===v]))}</section>`:''}
@@ -349,7 +355,7 @@ ${listed.length?`<div class="stack">${listed.map(sessionCard).join('')}</div>`:`
 function renderExercise(id){
  const e=exercises.find(x=>x.id===id);if(!e){view=null;return render();}
  const history=sessions.flatMap(s=>s.entries.filter(x=>x.exercise.id===e.id||x.exercise.name===e.name).map(x=>({...x,date:s.date})));
- show(`${topbar(back('Ejercicios','catalog'),btn('Editar','edit-exercise','link'))}<div class="photo-card">${e.image?`<img src="${esc(e.image)}" alt="">`:muscleIcon(e.group)}</div><h1>${esc(e.name)}</h1><p class="muted sub with-icon">${muscleIcon(e.group,'inline')}${esc(e.group)}${e.grips.length?` · ${esc(e.grips.join(', '))}`:''}</p>
+ show(`${topbar(back('Ejercicios','catalog'),btn('Editar','edit-exercise','link'))}<div class="photo-card" style="--photo:${muscleTint(e.group)}">${e.image?`<img src="${esc(e.image)}" alt="">`:muscleIcon(e.group)}</div><h1>${esc(e.name)}</h1><p class="muted sub with-icon">${muscleIcon(e.group,'inline')}${esc(e.group)}${e.grips.length?` · ${esc(e.grips.join(', '))}`:''}</p>
 ${history.length?section('Tu historial',history.map(x=>`<div class="row tall"><span class="grow"><strong>${x.weight?num(x.weight):'—'} kg · ${repsText(x)} · ${x.sets||'—'} series</strong>${x.grip||x.feeling?`<small>${[x.grip,x.feeling].filter(Boolean).map(esc).join(' · ')}</small>`:''}</span><small class="muted">${shortDate(x.date)}</small></div>`).join('')):`<div class="empty">${icon('history')}<strong>Todavía no lo has registrado</strong><p>Aparecerá aquí cuando lo hagas en un entreno.</p></div>`}`);
 }
 
