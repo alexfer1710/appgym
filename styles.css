@@ -489,3 +489,7 @@ dialog#modal:focus,dialog#modal:focus-visible{outline:none}
 .cover-top .icon-btn{width:40px;height:40px}
 .cover-top .icon-btn .icon{width:22px;height:22px}
 nav{width:min(calc(100% - 40px),300px)}
+/* tab bar shrinks while scrolling down */
+nav{transition:transform .32s cubic-bezier(.3,.7,.2,1),padding .32s,background .32s,box-shadow .32s;transform-origin:50% 100%}
+nav.compact{transform:translateX(-50%) translateY(6px) scale(.82);background:rgba(255,255,255,.5);box-shadow:0 6px 18px rgba(0,0,0,.1)}
+@media(prefers-reduced-motion:reduce){nav{transition:none}}
