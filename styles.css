@@ -469,3 +469,4 @@ main.home-page{padding-top:calc(var(--safe-top) + 34px)}
 .rest-actions button{flex:1;min-height:44px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:700;text-align:center}
 body:has(#foot .rest) main{padding-bottom:calc(var(--safe-bottom) + 250px)}
 body:has(#foot .finish-early) main{padding-bottom:calc(var(--safe-bottom) + 150px)}
+.row.wrap[hidden]{display:none}
