@@ -58,7 +58,7 @@ const sheetBar=(title,submit='Guardar')=>`<header class="sheet-bar">${btn('Cance
 
 function show(html,{footer='',bar=true,cls=''}={}){
  app.className=cls;app.innerHTML=html;foot.innerHTML=footer;
- nav.innerHTML=bar?TABS.map(([id,ic,label])=>`<button type="button" data-tab="${id}" class="${tab===id?'active':''}" aria-current="${tab===id?'page':'false'}" aria-label="${label}">${icon(ic)}<span class="sr-only">${label}</span></button>`).join(''):'';
+ updateNav(bar);
  document.body.dataset.chrome=footer?'foot':bar?'nav':'none';
  const key=view||tab;if(key!==lastKey){scrollTo(0,0);lastKey=key;}
  try{sessionStorage.setItem('gym11-nav',JSON.stringify({tab,view,editing,filter,pick}));}catch{}
@@ -77,6 +77,16 @@ function restorePlace(){
 }
 // Bottom sheet. Focus goes to the sheet itself (not its first button, which showed a focus
 // ring on "Cancelar"), the page behind stops scrolling, and dragging down closes it.
+// Tab bar is built once and kept, so the highlight pill can slide to the selected tab.
+function updateNav(bar){
+ nav.hidden=!bar;if(!bar)return;
+ if(!nav.querySelector('.nav-pill'))nav.innerHTML='<span class="nav-pill" aria-hidden="true"></span>'+TABS.map(([id,ic,label])=>`<button type="button" data-tab="${id}" aria-label="${label}">${icon(ic)}<span class="sr-only">${label}</span></button>`).join('');
+ let active=null;
+ nav.querySelectorAll('button[data-tab]').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('active',on);b.setAttribute('aria-current',on?'page':'false');if(on)active=b;});
+ const pill=nav.querySelector('.nav-pill'),place=()=>{pill.style.width=active.offsetWidth+'px';pill.style.transform=`translateX(${active.offsetLeft}px)`;};
+ if(!pill.dataset.ready){pill.style.transition='none';place();pill.offsetWidth;pill.style.transition='';pill.dataset.ready='1';}else place();
+}
+addEventListener('resize',()=>{if(!nav.hidden&&nav.querySelector('.nav-pill'))updateNav(true);});
 function openDialog(html){
  modal.innerHTML=`<div class="grabber" aria-hidden="true"></div>${html}`;
  if(!modal.open)modal.showModal();
@@ -347,7 +357,7 @@ ${section('Copias en archivo',`<button type="button" class="row" data-action="ex
 ${section('Esta app',`<div class="row"><span class="row-label">Sin conexión</span><small class="muted" id="offline-status">Comprobando…</small></div><button type="button" class="row" data-action="persist"><span class="row-label">Almacenamiento protegido</span><small class="muted">${persisted?'Concedido':'Solicitar'}</small></button><a class="row" href="https://repdb.co" target="_blank" rel="noopener"><span class="row-label">Ilustraciones de RepDB</span>${chevron()}</a>`,'Para instalarla: Safari → Compartir → Añadir a pantalla de inicio.')}`);
  checkOffline();
 }
-function renderLogin(){app.className='';foot.innerHTML='';nav.innerHTML='';document.body.dataset.chrome='none';app.innerHTML=`<div class="login"><img src="assets/icon-192.png" alt="" width="84" height="84"><h1>¿Quién eres?</h1><p class="muted">Escribe tu nombre y la inicial de tu apellido. Tus pesos se guardan en tu perfil y se sincronizan con la nube.</p><form id="login-form"><div class="list"><label class="row"><input name="who" placeholder="Ej.: Alex F" aria-label="Nombre e inicial del apellido" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" required maxlength="60"></label></div><button type="submit" class="primary">Entrar</button></form><small class="muted">La primera vez necesitas conexión a internet.</small></div>`;}
+function renderLogin(){app.className='';foot.innerHTML='';nav.hidden=true;document.body.dataset.chrome='none';app.innerHTML=`<div class="login"><img src="assets/icon-192.png" alt="" width="84" height="84"><h1>¿Quién eres?</h1><p class="muted">Escribe tu nombre y la inicial de tu apellido. Tus pesos se guardan en tu perfil y se sincronizan con la nube.</p><form id="login-form"><div class="list"><label class="row"><input name="who" placeholder="Ej.: Alex F" aria-label="Nombre e inicial del apellido" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" required maxlength="60"></label></div><button type="submit" class="primary">Entrar</button></form><small class="muted">La primera vez necesitas conexión a internet.</small></div>`;}
 
 /* ---------- sheets (forms) ---------- */
 // Shared fields for a recorded exercise. `entry` is null when adding by hand.
