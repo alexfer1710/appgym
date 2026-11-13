@@ -42,7 +42,7 @@ function toast(message){const el=document.querySelector('#notice');el.textConten
 /* ---------- building blocks ---------- */
 const btn=(label,action,cls='')=>`<button type="button" class="${cls}" data-action="${action}">${label}</button>`;
 const iconBtn=(name,action,label)=>`<button type="button" class="icon-btn" data-action="${action}" aria-label="${label}">${icon(name)}</button>`;
-const back=(label,action)=>`<button type="button" class="link back" data-action="${action}">${icon('chevron-left')}${esc(label)}</button>`;
+const back=(label,action)=>`<button type="button" class="link back" data-back data-action="${action}">${icon('chevron-left')}${esc(label)}</button>`;
 const topbar=(left='',right='')=>`<div class="topbar">${left||'<span></span>'}${right||'<span></span>'}</div>`;
 const thumb=(e,cls='')=>`<span class="thumb ${cls}">${e.image?`<img src="${esc(e.image)}" alt="" loading="lazy">`:muscleIcon(e.group)}</span>`;
 const chevron=()=>icon('chevron-right','chev');
@@ -56,13 +56,75 @@ const toggle=(name,checked,id='')=>`<input type="checkbox" class="switch" name="
 const stepper=(name,value,min,max,attrs='',cls='')=>`<div class="stepper ${cls}" ${attrs}><button type="button" data-step="-1" aria-label="Menos">${icon('minus')}</button><input name="${name}" type="number" inputmode="numeric" min="${min}" max="${max}" value="${value}"><button type="button" data-step="1" aria-label="Más">${icon('plus')}</button></div>`;
 const sheetBar=(title,submit='Guardar')=>`<header class="sheet-bar">${btn('Cancelar','close','link')}<h2>${esc(title)}</h2>${submit?`<button type="submit" class="link strong">${submit}</button>`:'<span></span>'}</header>`;
 
-function show(html,{footer='',bar=true,cls=''}={}){
+/* ---------- screen stack: iOS-style push/pop and swipe from the edge to go back ----------
+   A web app has no native navigation stack, so we keep one: each screen remembers the one
+   before it (and a snapshot of it) to animate going forward/back and to show it underneath
+   while dragging from the left edge. */
+let navStack=[],skipTransition=false;
+const isRoot=k=>['home','history','catalog'].includes(k);
+const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function navDirection(key){
+ if(key===lastKey)return null;
+ if(lastKey==null||(isRoot(key)&&isRoot(lastKey))){navStack=[{key}];return 'none';}   // first screen or switching tabs
+ const i=navStack.findIndex(e=>e.key===key);
+ if(i>=0){navStack=navStack.slice(0,i+1);return 'back';}
+ if(isRoot(key)){navStack=[{key}];return 'back';}                                      // e.g. discarding a workout
+ navStack.push({key});return 'forward';
+}
+function show(html,opts={}){
+ const key=view||tab,top=navStack[navStack.length-1];
+ if(top&&key!==lastKey){top.html=app.innerHTML;top.cls=app.className;top.scroll=scrollY;}
+ const dir=navDirection(key),paint=()=>paintScreen(html,opts);
+ if((dir==='forward'||dir==='back')&&!skipTransition&&document.startViewTransition&&!reducedMotion()){
+  document.documentElement.dataset.nav=dir;
+  document.startViewTransition(paint).finished.finally(()=>{delete document.documentElement.dataset.nav;});
+ }else paint();
+ skipTransition=false;
+}
+function paintScreen(html,{footer='',bar=true,cls=''}={}){
  app.className=cls;app.innerHTML=html;foot.innerHTML=footer;
  updateNav(bar);
  document.body.dataset.chrome=footer?'foot':bar?'nav':'none';
  const key=view||tab;if(key!==lastKey){scrollTo(0,0);lastKey=key;nav.classList.remove('compact');lastScrollY=0;}
  try{sessionStorage.setItem('gym11-nav',JSON.stringify({tab,view,editing,filter,pick}));}catch{}
 }
+// Swipe from the left edge: the screen follows the finger with the previous one underneath.
+let edge=null;
+const underlay=document.createElement('div');underlay.className='underlay';underlay.setAttribute('aria-hidden','true');underlay.inert=true;
+function edgeStart(){
+ const prev=navStack[navStack.length-2];
+ underlay.innerHTML=prev?.html?`<main class="${prev.cls||''}" style="transform:translateY(${-(prev.scroll||0)}px)">${prev.html}</main>`:'';
+ underlay.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+ document.body.append(underlay);document.body.classList.add('edge-swiping');
+}
+function edgeMove(dx){
+ const p=Math.min(1,dx/innerWidth);
+ for(const el of [app,foot])el.style.transform=`translateX(${dx}px)`;
+ underlay.style.transform=`translateX(${-28*(1-p)}%)`;underlay.style.setProperty('--dim',(.12*(1-p)).toFixed(3));
+}
+function edgeEnd(go,btn){
+ const done=()=>{for(const el of [app,foot]){el.style.transition='';el.style.transform='';}underlay.style.transition='';underlay.style.transform='';underlay.remove();document.body.classList.remove('edge-swiping');};
+ for(const el of [app,foot,underlay])el.style.transition='transform .26s cubic-bezier(.2,.9,.3,1)';
+ if(!go){edgeMove(0);setTimeout(done,270);return;}
+ edgeMove(innerWidth);
+ setTimeout(()=>{const before=lastKey;skipTransition=true;btn.click();const t0=Date.now();
+  (function wait(){if(lastKey!==before||Date.now()-t0>600){skipTransition=false;requestAnimationFrame(done);}else requestAnimationFrame(wait);})();},260);
+}
+document.addEventListener('touchstart',e=>{
+ const t=e.touches[0];if(e.touches.length>1||modal.open||t.clientX>24)return;
+ const btn=app.querySelector('[data-back]');if(!btn)return;
+ edge={x0:t.clientX,y0:t.clientY,t0:Date.now(),dx:0,on:false,btn};
+},{passive:true});
+document.addEventListener('touchmove',e=>{
+ if(!edge)return;const t=e.touches[0],dx=t.clientX-edge.x0,dy=t.clientY-edge.y0;
+ if(!edge.on){if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){edge=null;return;}if(dx<8)return;edge.on=true;edgeStart();}
+ e.preventDefault();edge.dx=Math.max(0,dx);edgeMove(edge.dx);
+},{passive:false});
+document.addEventListener('touchend',()=>{
+ if(!edge)return;const s=edge;edge=null;if(!s.on)return;
+ edgeEnd(s.dx>innerWidth*.35||(s.dx>50&&s.dx/Math.max(1,Date.now()-s.t0)>.65),s.btn);   // far enough, or a quick flick
+});
+document.addEventListener('touchcancel',()=>{if(edge?.on)edgeEnd(false,edge.btn);edge=null;});
 // After a reload (iOS may restart the app in the background) go back to the same screen.
 function restorePlace(){
  let saved;try{saved=JSON.parse(sessionStorage.getItem('gym11-nav')||'null');}catch{}
@@ -235,7 +297,7 @@ function priorCard(){
 function renderSetup(){
  const e=selection.exercise,fixed=e.name.startsWith('Curl 15')?15:e.name.startsWith('Curl 21')?21:null;
  const customSets=![3,4,5].includes(selection.sets),customReps=!selection.toFailure&&![6,8,10,12].includes(selection.reps);
- show(`<div class="setup-photo">${e.image?`<img src="${esc(e.image)}" alt="">`:muscleIcon(e.group)}<div class="float-bar">${iconBtn('chevron-left','select','Volver a los ejercicios')}</div><span class="pill">${icon('dumbbell')}${esc(e.group)}</span></div>
+ show(`<div class="setup-photo">${e.image?`<img src="${esc(e.image)}" alt="">`:muscleIcon(e.group)}<div class="float-bar"><button type="button" class="icon-btn" data-back data-action="select" aria-label="Volver a los ejercicios">${icon('chevron-left')}</button></div><span class="pill">${icon('dumbbell')}${esc(e.group)}</span></div>
 <div class="pad">
 <div class="setup-head"><div class="grow"><h1>${esc(e.name)}</h1>${selection.grip?`<button type="button" class="link grip-link" data-action="${e.grips.length>1?'regrip':'noop'}">Agarre: ${esc(selection.grip)}${e.grips.length>1?' · Cambiar':''}</button>`:''}</div>${unilateralMode(e)==='optional'?`<label class="mini-toggle"><small>Unilateral</small>${toggle('unilateral',selection.unilateral,'unilateral')}</label>`:unilateralMode(e)==='always'?'<span class="tag">Unilateral</span>':''}</div>
 ${e.usesCable?`<section class="card block"><div class="caption">Polea</div>${segButtons(STATIONS.map(([v,l])=>['station:'+v,l,selection.cableStation===v]))}</section>`:''}
@@ -323,7 +385,7 @@ function setupRuler(){
 function fitWeight(){const el=document.querySelector('#weight');if(!el)return;const probe=fitWeight.probe||=Object.assign(document.createElement('span'),{className:'weight-probe'});if(!probe.isConnected)document.body.append(probe);el.style.fontSize='';const cs=getComputedStyle(el);for(const k of ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','fontVariantNumeric'])probe.style[k]=cs[k];probe.textContent=el.value||'0';let width=probe.getBoundingClientRect().width+4;const room=el.parentElement.clientWidth-(el.nextElementSibling?.offsetWidth||0)-8;el.style.fontSize='';if(width>room){const size=parseFloat(cs.fontSize)*room/width;el.style.fontSize=size+'px';width=room;}el.style.width=Math.ceil(width)+'px';}
 function updateTimer(){const el=document.querySelector('#timer');if(el&&selection?.started){const sec=Math.max(0,Math.floor((Date.now()-selection.started)/1000));el.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}}
 setInterval(()=>{updateTimer();updateRest();},250);
-function renderRating(){show(`<div class="rating"><button type="button" class="icon-btn white" data-action="active" aria-label="Volver al ejercicio">${icon('chevron-left')}</button><div class="rating-body"><h1>¿Qué tal el peso?</h1><p class="muted">${esc(selection.exercise.name)} · ${num(selection.weight)} kg</p>${[['Fácil','smile','easy'],['Perfecto','check-circle','perfect'],['Demasiado','alert-circle','hard']].map(([f,ic,cls])=>`<button type="button" class="mood ${cls}" data-action="feeling:${f}">${icon(ic)}${f}</button>`).join('')}</div></div>`,{bar:false});}
+function renderRating(){show(`<div class="rating"><button type="button" class="icon-btn white" data-back data-action="active" aria-label="Volver al ejercicio">${icon('chevron-left')}</button><div class="rating-body"><h1>¿Qué tal el peso?</h1><p class="muted">${esc(selection.exercise.name)} · ${num(selection.weight)} kg</p>${[['Fácil','smile','easy'],['Perfecto','check-circle','perfect'],['Demasiado','alert-circle','hard']].map(([f,ic,cls])=>`<button type="button" class="mood ${cls}" data-action="feeling:${f}">${icon(ic)}${f}</button>`).join('')}</div></div>`,{bar:false});}
 function showPrior(){
  const e=selection.exercise,prior=antecedents(sessions,e,selection.grip,selection.cableStation);
  openDialog(`<header class="sheet-bar"><span></span><h2>Anteriores</h2>${btn('Listo','close','link strong')}</header><div class="list">${prior.map(p=>`<div class="row tall"><span class="grow"><strong>${p.weight>0?num(p.weight)+' kg':'Peso sin anotar'}</strong><small>${[p.toFailure||p.reps?repsText(p):null,`${p.order}.º de ${esc(p.exercise.group.toLowerCase())}`,p.feeling?esc(p.feeling):null].filter(Boolean).join(' · ')}</small></span><small class="muted">${shortDate(p.date)}</small></div>`).join('')}</div>`);
@@ -534,6 +596,7 @@ document.addEventListener('click',ev=>{
  });
 });
 document.addEventListener('change',e=>safe(()=>handleChange(e.target)));
+document.addEventListener('touchstart',()=>{},{passive:true});   // lets :active styles show on iOS
 document.addEventListener('input',e=>{if(e.target.id==='weight')fitWeight();if(e.target.id==='search'){search=e.target.value;const start=e.target.selectionStart;render();const input=document.querySelector('#search');input.focus();input.setSelectionRange(start,start);}});
 modal.addEventListener('submit',e=>{e.preventDefault();safe(()=>submit(e.target));});
 
