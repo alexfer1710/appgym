@@ -535,11 +535,3 @@ button,a.row,label.row{-webkit-touch-callout:none}
 .group:active,.ex-card:active,.ex-row:active,.session:active,.grip:active,.last:active,.month:active{transform:scale(.97)}
 .group,.ex-card,.ex-row,.session,.grip,.last,.month{transition:transform .2s cubic-bezier(.3,.7,.2,1)}
 button.primary:active{transform:scale(.97);opacity:.88}
-/* sliding selection pill in segmented controls and filter chips (same feel as the tab bar) */
-.seg,.chips{position:relative;isolation:isolate}
-.slide-pill{position:absolute;left:0;top:0;z-index:0;border-radius:999px;background:#111;pointer-events:none}
-.has-pill>button,.has-pill>label{position:relative}
-.has-pill>button.on,.has-pill>label>input:checked+span{background:transparent!important;box-shadow:none!important}
-.chips.has-pill>button{background:none}
-.chips.has-pill>button::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--surface);z-index:-1}
-.list .seg .slide-pill,.card .seg .slide-pill{background:#111}
