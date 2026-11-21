@@ -539,3 +539,30 @@ button,a.row,label.row{-webkit-touch-callout:none}
 .group:active,.ex-card:active,.ex-row:active,.session:active,.grip:active,.last:active,.month:active{transform:scale(.97)}
 .group,.ex-card,.ex-row,.session,.grip,.last,.month{transition:transform .2s cubic-bezier(.3,.7,.2,1)}
 button.primary:active{transform:scale(.97);opacity:.88}
+/* ---------- workout in progress ---------- */
+/* Home: the start button becomes the workout clock */
+.workout-clock{width:100%;min-height:56px;border-radius:var(--radius-xl);background:#111;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px}
+.workout-clock small{color:rgba(255,255,255,.7);font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workout-clock b{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+/* floating "Continuar entrenamiento" bar right above the tab bar, same glass */
+#resume-bar{position:fixed;z-index:10;left:50%;transform:translateX(-50%);bottom:calc(max(14px,calc(var(--safe-bottom) - 6px)) + 72px);width:min(calc(100% - 40px),300px);display:flex;align-items:center;gap:10px;padding:7px 14px 7px 7px;border-radius:28px;background:rgba(255,255,255,.5);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);border:.5px solid rgba(0,0,0,.07);box-shadow:0 10px 30px rgba(0,0,0,.12),0 1px 3px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.75);text-align:left;color:#111;transition:transform .34s cubic-bezier(.3,.7,.2,1);transform-origin:50% 100%;view-transition-name:resumebar;-webkit-tap-highlight-color:transparent}
+#resume-bar[hidden]{display:none}
+#resume-bar.compact{transform:translateX(-50%) translateY(10px) scale(.84)}
+#resume-bar:active{transform:translateX(-50%) scale(.97)}
+#resume-bar .resume-icon{width:40px;height:40px;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center;flex:none}
+#resume-bar .resume-icon .icon{width:16px;height:16px}
+#resume-bar .grow{min-width:0;display:flex;flex-direction:column}
+#resume-bar strong{font-size:15px;font-weight:700}
+#resume-bar small{font-size:12.5px;color:#6e6e73;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#resume-bar .resume-time{font-weight:700;font-variant-numeric:tabular-nums;font-size:15px}
+body.has-resume[data-chrome=nav] main{padding-bottom:calc(var(--safe-bottom) + 180px)}
+@media(prefers-reduced-motion:reduce){#resume-bar{transition:none}}
+/* half-done exercise in the workout list */
+.card.going{display:flex;align-items:center;gap:12px;width:100%;padding:10px 14px 10px 10px;margin:4px 0 14px;text-align:left}
+.card.going .grow{display:flex;flex-direction:column;min-width:0}
+.card.going .grow small:first-child{color:#6e6e73;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+.card.going strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card.going .going-go{display:flex;align-items:center;gap:2px;font-weight:700;font-size:15px;flex:none}
+.card.going .going-go .icon{width:16px;height:16px}
+.going-tag{font-size:11.5px;font-weight:700;color:#fff;background:#111;border-radius:999px;padding:3px 8px;flex:none}
+.ex-card .going-tag{position:absolute;top:8px;right:8px;z-index:1}
