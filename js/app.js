@@ -74,7 +74,7 @@ function navDirection(key){
 function show(html,opts={}){
  const key=view||tab,top=navStack[navStack.length-1];
  if(top&&key!==lastKey){top.html=app.innerHTML;top.cls=app.className;top.scroll=scrollY;}
- const dir=navDirection(key),paint=()=>paintScreen(html,opts);
+ const dir=navDirection(key),paint=()=>{paintScreen(html,opts);opts.after?.();};   // after: DOM work on the new screen
  if((dir==='forward'||dir==='back')&&!skipTransition&&document.startViewTransition&&!reducedMotion()){
   document.documentElement.dataset.nav=dir;
   document.startViewTransition(paint).finished.finally(()=>{delete document.documentElement.dataset.nav;});
@@ -83,9 +83,9 @@ function show(html,opts={}){
 }
 function paintScreen(html,{footer='',bar=true,cls=''}={}){
  app.className=cls;app.innerHTML=html;foot.innerHTML=footer;
- updateNav(bar);
+ updateNav(bar);updateResume(bar);
  document.body.dataset.chrome=footer?'foot':bar?'nav':'none';
- const key=view||tab;if(key!==lastKey){scrollTo(0,0);lastKey=key;nav.classList.remove('compact');lastScrollY=0;}
+ const key=view||tab;if(key!==lastKey){scrollTo(0,0);lastKey=key;nav.classList.remove('compact');resumeBar.classList.remove('compact');lastScrollY=0;}
  try{sessionStorage.setItem('gym11-nav',JSON.stringify({tab,view,editing,filter,pick}));}catch{}
 }
 // Swipe from the left edge: the screen follows the finger with the previous one underneath.
@@ -227,12 +227,19 @@ function endDrag(e,cancel){
 nav.addEventListener('pointerup',e=>endDrag(e,false));
 nav.addEventListener('pointercancel',e=>endDrag(e,true));
 nav.addEventListener('click',e=>{if(nav.dataset.dragged){e.stopPropagation();e.preventDefault();}},true);
+// While a workout is on, a second floating bar sits right above the tab bar to go back to it.
+const resumeBar=document.createElement('button');resumeBar.type='button';resumeBar.id='resume-bar';resumeBar.dataset.action='resume';resumeBar.hidden=true;document.body.append(resumeBar);
+function updateResume(bar){
+ const on=!!(bar&&draft);resumeBar.hidden=!on;document.body.classList.toggle('has-resume',on);if(!on)return;
+ const sub=selection?.started?`A medias: ${selection.exercise.name}`:draft.entries.length?plural(draft.entries.length,'ejercicio hecho','ejercicios hechos'):draft.groups.join(' + ');
+ resumeBar.innerHTML=`<span class="resume-icon">${icon('play')}</span><span class="grow"><strong>Continuar entrenamiento</strong><small>${esc(sub)}</small></span><span class="resume-time" data-since="${new Date(draft.date).getTime()}">${sinceText(new Date(draft.date).getTime())}</span>`;
+}
 addEventListener('resize',()=>{if(!nav.hidden&&nav.querySelector('.nav-pill')){lens.ready=false;updateNav(true);}});
 // Like Instagram: scrolling down shrinks the tab bar out of the way, scrolling up brings it back.
 let lastScrollY=0;
 addEventListener('scroll',()=>{
  const y=scrollY,dy=y-lastScrollY;if(Math.abs(dy)<6)return;
- nav.classList.toggle('compact',dy>0&&y>40&&y+innerHeight<document.documentElement.scrollHeight-4);
+ nav.classList.toggle('compact',dy>0&&y>40&&y+innerHeight<document.documentElement.scrollHeight-4);resumeBar.classList.toggle('compact',nav.classList.contains('compact'));
  lastScrollY=y;
 },{passive:true});
 function openDialog(html){
@@ -309,7 +316,7 @@ function renderHome(){
  show(`<header class="cover"><div class="cover-top"><p class="cover-date">${esc(dateText.charAt(0).toUpperCase()+dateText.slice(1))}</p>${iconBtn('gear','settings','Ajustes')}</div><h1>${name?`Hola, ${esc(name)}.`:'Hola.'}</h1><p class="cover-note">${esc(note)}</p></header>
 <div class="home-panel">
 <section class="week card raised" aria-label="Esta semana">${['L','M','X','J','V','S','D'].map((letter,i)=>{const k=dayKey(addDays(monday,i)),isToday=k===today,isDone=days.has(k);return `<div class="${isToday?'today':''}"><small>${letter}</small><span class="dot ${isDone?'done':''}">${isDone?icon('check'):isToday?letter:''}</span></div>`;}).join('')}</section>
-<button type="button" class="primary" data-action="${draft?'resume':'start'}">${icon('play')}${draft?'Continuar entrenamiento':'Empezar entrenamiento'}</button>
+${draft?`<div class="workout-clock" role="timer" aria-label="Tiempo de entreno"><small>Entrenando · ${esc(draft.groups.join(' + '))}</small><b data-since="${new Date(draft.date).getTime()}">${sinceText(new Date(draft.date).getTime())}</b></div>`:`<button type="button" class="primary" data-action="start">${icon('play')}Empezar entrenamiento</button>`}
 <button type="button" class="card month" data-tab="history"><span class="between"><strong>Tu actividad este mes</strong>${chevron()}</span><span class="monthbars">${Array.from({length:monthLength},(_,i)=>{const c=perDay.get(dayKey(new Date(now.getFullYear(),now.getMonth(),i+1)))||0;return `<i class="${c?'on':''}" style="height:${c?Math.min(54,15+c*7):7}px"></i>`;}).join('')}</span><span class="between muted"><small>1</small><small>${esc(now.toLocaleDateString('es-ES',{month:'long'}))}</small><small>${monthLength}</small></span></button>
 <div class="stats"><div class="card raised stat"><span class="badge-icon blue">${icon('dumbbell')}</span><b>${fourWeeks}</b><strong>entrenos</strong><small>últimas 4 semanas</small>${miniBars(weekly,'var(--accent)')}</div><div class="card raised stat"><span class="badge-icon orange">${icon('flame')}</span><b>${streak}</b><strong>${streak===1?'día':'días'}</strong><small>racha actual</small>${miniBars(daily,'var(--orange)')}</div></div>
 ${latest?`<button type="button" class="card last" data-session="${esc(latest.id)}"><span class="badge-icon blue big">${icon('history')}</span><span class="grow"><small>Último entreno</small><strong>${esc(latest.groups.join(' + ')||latest.historicalTitle||'Entreno')}</strong><small>${esc(longDate(latest.date))}</small></span>${chevron()}</button>`:''}
@@ -332,15 +339,15 @@ function renderGroups(){
 
 /* ---------- exercise library: tab, workout selection, add to past workout ---------- */
 function exerciseCard(e,mode){
- const attr=mode==='pick'?'pick':mode==='workout'?'choose':'exercise',done=mode==='workout'&&draft.entries.some(x=>x.exercise.id===e.id);
- if(layout==='list')return `<button type="button" class="card ex-row" data-${attr}="${esc(e.id)}">${thumb(e)}<span class="grow"><strong>${esc(e.name)}</strong></span>${done?icon('check-circle','accent'):chevron()}</button>`;
- return `<button type="button" class="card ex-card" data-${attr}="${esc(e.id)}">${thumb(e)}${done?`<span class="done-mark">${icon('check')}</span>`:''}<strong>${esc(e.name)}</strong></button>`;
+ const attr=mode==='pick'?'pick':mode==='workout'?'choose':'exercise',done=mode==='workout'&&draft.entries.some(x=>x.exercise.id===e.id),going=mode==='workout'&&selection?.started&&selection.exercise.id===e.id;
+ if(layout==='list')return `<button type="button" class="card ex-row" data-${attr}="${esc(e.id)}">${thumb(e)}<span class="grow"><strong>${esc(e.name)}</strong></span>${going?'<span class="going-tag">A medias</span>':done?icon('check-circle','accent'):chevron()}</button>`;
+ return `<button type="button" class="card ex-card" data-${attr}="${esc(e.id)}">${thumb(e)}${going?'<span class="going-tag">A medias</span>':done?`<span class="done-mark">${icon('check')}</span>`:''}<strong>${esc(e.name)}</strong></button>`;
 }
 function renderLibrary(mode){
  const inWorkout=mode==='workout',picking=mode==='pick';
  const list=recentExercises(exercises.filter(e=>!e.deleted),sessions).filter(e=>(filter==='Todos'||e.group===filter)&&e.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()));
  const s=picking?currentSession():null;
- const head=inWorkout?`${topbar(back('Inicio','home'),iconBtn('plus','new-exercise','Nuevo ejercicio'))}<h1>Elige ejercicio</h1>`
+ const head=inWorkout?`${topbar(back('Inicio','home'),iconBtn('plus','new-exercise','Nuevo ejercicio'))}<h1>Elige ejercicio</h1>${selection?.started?`<button type="button" class="card going" data-choose="${esc(selection.exercise.id)}">${thumb(selection.exercise)}<span class="grow"><small>A medias</small><strong>${esc(selection.exercise.name)}</strong><small class="muted"><span data-since="${selection.started}">${mmss(Math.floor((Date.now()-selection.started)/1000))}</span> · ${num(selection.weight)} kg</small></span><span class="going-go">Volver${icon('chevron-right')}</span></button>`:''}`
   :picking?`${topbar(back('Entreno','back-to-session'),iconBtn('plus','new-exercise','Nuevo ejercicio'))}<h1>Añadir ejercicio</h1><p class="muted sub">${esc(s.groups.join(' + '))} · ${esc(date(s.date))} · ${plural(s.entries.length,'ejercicio','ejercicios')}</p>`
   :`<div class="title-row"><h1>Ejercicios</h1>${iconBtn('plus','new-exercise','Nuevo ejercicio')}</div>`;
  const filters=inWorkout?segButtons([...draft.groups,'Todos'].map(g=>['filter:'+g,esc(g),filter===g])).replace('class="seg"',`class="seg tabs-${draft.groups.length+1}"`)
@@ -351,6 +358,10 @@ function renderLibrary(mode){
  {bar:!inWorkout,footer:inWorkout?`<button type="button" class="done-row" data-action="summary"><span>Ejercicios hechos (${draft.entries.length})</span>${icon('chevron-up')}</button><button type="button" class="primary" data-action="finish-workout" ${draft.entries.length?'':'disabled'}>Finalizar</button>`:''});
 }
 async function choose(id){
+ if(selection?.started){
+  if(selection.exercise.id===id){view=selection.ended?'rating':'active';await saveSelection();render();return;}
+  if(!confirm(`Tienes ${selection.exercise.name} a medias. ¿Dejarlo sin registrar y empezar otro?`))return;
+ }
  const exercise=exercises.find(e=>e.id===id);
  selection={exercise,grip:exercise.grips[0]||null,cableStation:'sala1',weight:0,sets:4,reps:exercise.name.startsWith('Curl 15')?15:exercise.name.startsWith('Curl 21')?21:10,toFailure:false,unilateral:unilateralMode(exercise)==='always',dropset:false};
  selection.weight=suggestWeight(sessions,exercise,selection.grip);
@@ -380,8 +391,7 @@ function renderActive(){
  const e=selection.exercise,uni=unilateralMode(e)==='always'||(unilateralMode(e)==='optional'&&selection.unilateral),detail=[selection.grip,e.usesCable?'Polea · '+stationName(selection.cableStation):null,uni?'Unilateral':null,selection.dropset?dsText(selection.dropsetInfo||dsDefault()):null].filter(Boolean).join(' · ');
  show(`${topbar(back('Ajustes del ejercicio','setup'))}<div class="active-view"><div class="timer" id="timer" aria-label="Tiempo efectivo">0:00</div><h1>${esc(e.name)}</h1>${detail?`<small class="muted">${esc(detail)}</small>`:''}<p class="muted">${plural(selection.sets,'serie','series')} · ${selection.toFailure?'al fallo':selection.reps+' repeticiones'}</p>${trackSets?setsTrack():''}
 ${adviceChip()}<label class="weight-value"><input id="weight" inputmode="decimal" enterkeyhint="done" value="${num(selection.weight)}" aria-label="Peso en kilos (toca para escribirlo)"><span>kg</span></label>${weightRuler(lastWeight())}</div>${priorCard()}`,
- {bar:false,footer:trackSets?activeFooter():`<button type="button" class="primary check" data-action="rate" aria-label="Terminar ejercicio">${icon('check')}</button>`});
- updateTimer();fitWeight();setupRuler();markAdvice();
+ {bar:false,footer:trackSets?activeFooter():`<button type="button" class="primary check" data-action="rate" aria-label="Terminar ejercicio">${icon('check')}</button>`,after:()=>{updateTimer();fitWeight();setupRuler();markAdvice();}});
 }
 /* ---------- sets and rest ---------- */
 // One segment per planned set, filled as sets are done. After each set a rest countdown runs
@@ -391,6 +401,8 @@ const setsDone=()=>selection?.setsDone||0;
 const resting=()=>trackSets&&!!selection?.restUntil;
 function setsTrack(){const n=Math.max(selection.sets,setsDone());return `<div class="sets-track" aria-label="${setsDone()} de ${selection.sets} series hechas">${Array.from({length:n},(_,i)=>`<i class="${i<setsDone()?'on':''}"></i>`).join('')}</div><small class="sets-label">${setsDone()?`${setsDone()} de ${selection.sets} hechas`:'Ninguna serie hecha todavía'}</small>`;}
 const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+// Time since a moment, as m:ss or h:mm:ss.
+function sinceText(t){const s=Math.max(0,Math.floor((Date.now()-t)/1000)),h=Math.floor(s/3600);return h?`${h}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`:mmss(s);}
 function activeFooter(){
  if(resting()){const left=Math.max(0,Math.ceil((selection.restUntil-Date.now())/1000));
   return `<div class="rest" role="timer" aria-live="off"><div class="rest-top"><small>Descanso · siguiente: serie ${setsDone()+1} de ${selection.sets}</small></div><div class="rest-time" id="rest-time">${mmss(left)}</div><div class="rest-bar"><i id="rest-bar" style="width:${Math.min(100,left/(selection.restTotal||restSeconds)*100)}%"></i></div><div class="rest-actions">${btn('−15 s','rest:-15')}${btn('Saltar','rest-skip')}${btn('+15 s','rest:15')}</div></div>`;}
@@ -454,7 +466,7 @@ function setupRuler(){
 }
 function fitWeight(){const el=document.querySelector('#weight');if(!el)return;const probe=fitWeight.probe||=Object.assign(document.createElement('span'),{className:'weight-probe'});if(!probe.isConnected)document.body.append(probe);el.style.fontSize='';const cs=getComputedStyle(el);for(const k of ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','fontVariantNumeric'])probe.style[k]=cs[k];probe.textContent=el.value||'0';let width=probe.getBoundingClientRect().width+4;const room=el.parentElement.clientWidth-(el.nextElementSibling?.offsetWidth||0)-8;el.style.fontSize='';if(width>room){const size=parseFloat(cs.fontSize)*room/width;el.style.fontSize=size+'px';width=room;}el.style.width=Math.ceil(width)+'px';}
 function updateTimer(){const el=document.querySelector('#timer');if(el&&selection?.started){const sec=Math.max(0,Math.floor((Date.now()-selection.started)/1000));el.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}}
-setInterval(()=>{updateTimer();updateRest();},250);
+setInterval(()=>{updateTimer();updateRest();document.querySelectorAll('[data-since]').forEach(el=>{const t=sinceText(Number(el.dataset.since));if(el.textContent!==t)el.textContent=t;});},250);
 function renderRating(){show(`<div class="rating"><button type="button" class="icon-btn white" data-back data-action="active" aria-label="Volver al ejercicio">${icon('chevron-left')}</button><div class="rating-body"><h1>¿Qué tal el peso?</h1><p class="muted">${esc(selection.exercise.name)} · ${num(selection.weight)} kg</p>${[['Fácil','smile','easy'],['Perfecto','check-circle','perfect'],['Demasiado','alert-circle','hard']].map(([f,ic,cls])=>`<button type="button" class="mood ${cls}" data-action="feeling:${f}">${icon(ic)}${f}</button>`).join('')}</div></div>`,{bar:false});}
 function showPrior(){
  const e=selection.exercise,prior=antecedents(sessions,e,selection.grip,selection.cableStation);
@@ -502,10 +514,9 @@ function renderSettings(){
 ${p?section('Tu perfil',`<div class="row"><span class="badge-icon blue">${esc(p.firstName.charAt(0))}</span><span class="grow"><strong>${esc(p.name)}</strong><small id="cloud-status">${esc(cloudText())}</small></span></div><button type="button" class="row" data-action="restore-list"><span class="row-label">Recuperar una copia anterior</span>${chevron()}</button>${btn('Cerrar sesión','logout','row danger')}`,'Tus datos se sincronizan solos: entrando con tu nombre ves lo mismo en cualquier dispositivo. Sin internet puedes seguir usándola y los cambios se suben al volver la conexión.'):''}
 ${section('Entrenamiento',`<label class="row"><span class="row-label">Contar series y descanso</span>${toggle('track-sets',trackSets,'track-sets')}</label>`,'Si lo activas, marcas cada serie al acabarla y entre series sale una cuenta atrás de descanso. Desactivado, solo empiezas el ejercicio y lo terminas con ✓.')}
 ${section('Copias en archivo',`<button type="button" class="row" data-action="export"><span class="row-label">Exportar copia JSON</span>${chevron()}</button><label class="row"><span class="row-label">Importar copia…</span>${chevron()}<input type="file" id="import" accept=".json,application/json" hidden></label>`,'La importación se confirma antes de guardar y evita duplicados. También acepta la exportación de la app de Swift y el histórico de Notas.')}
-${section('Esta app',`<div class="row"><span class="row-label">Sin conexión</span><small class="muted" id="offline-status">Comprobando…</small></div><button type="button" class="row" data-action="persist"><span class="row-label">Almacenamiento protegido</span><small class="muted">${persisted?'Concedido':'Solicitar'}</small></button><a class="row" href="https://repdb.co" target="_blank" rel="noopener"><span class="row-label">Ilustraciones de RepDB</span>${chevron()}</a>`,'Para instalarla: Safari → Compartir → Añadir a pantalla de inicio.')}`);
- checkOffline();
+${section('Esta app',`<div class="row"><span class="row-label">Sin conexión</span><small class="muted" id="offline-status">Comprobando…</small></div><button type="button" class="row" data-action="persist"><span class="row-label">Almacenamiento protegido</span><small class="muted">${persisted?'Concedido':'Solicitar'}</small></button><a class="row" href="https://repdb.co" target="_blank" rel="noopener"><span class="row-label">Ilustraciones de RepDB</span>${chevron()}</a>`,'Para instalarla: Safari → Compartir → Añadir a pantalla de inicio.')}`,{after:checkOffline});
 }
-function renderLogin(){app.className='';foot.innerHTML='';nav.hidden=true;document.body.dataset.chrome='none';app.innerHTML=`<div class="login"><img src="assets/icon-192.png" alt="" width="84" height="84"><h1>¿Quién eres?</h1><p class="muted">Escribe tu nombre y la inicial de tu apellido. Tus pesos se guardan en tu perfil y se sincronizan con la nube.</p><form id="login-form"><div class="list"><label class="row"><input name="who" placeholder="Laura M" aria-label="Nombre e inicial del apellido" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" required maxlength="60"></label></div><button type="submit" class="primary">Entrar</button></form><small class="muted">La primera vez necesitas conexión a internet.</small></div>`;}
+function renderLogin(){app.className='';foot.innerHTML='';nav.hidden=true;document.body.dataset.chrome='none';app.innerHTML=`<div class="login"><img src="assets/icon-192.png" alt="" width="84" height="84"><h1>¿Quién eres?</h1><p class="muted">Escribe tu nombre y la inicial de tu apellido. Tus pesos se guardan en tu perfil y se sincronizan con la nube.</p><form id="login-form"><div class="list"><label class="row"><input name="who" placeholder="Josep F" aria-label="Nombre e inicial del apellido" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" required maxlength="60"></label></div><button type="submit" class="primary">Entrar</button></form><small class="muted">La primera vez necesitas conexión a internet.</small></div>`;}
 
 /* ---------- sheets (forms) ---------- */
 // Shared fields for a recorded exercise. `entry` is null when adding by hand.
@@ -549,7 +560,7 @@ async function action(a){
  if(a==='resume'){selection=draft.selection||null;view=selection&&['grip','setup','active','rating'].includes(draft.phase)?draft.phase:'select';filter=[...draft.groups,'Todos'].includes(filter)?filter:draft.groups[0];render();return;}
  if(a==='group-start'){if(!pick.length){toast('Elige al menos un grupo.');return;}if(draft&&draft.entries.length&&!confirm('Ya hay un entrenamiento en curso. ¿Descartarlo y empezar otro?'))return;draft={id:uid(),date:new Date().toISOString(),groups:[...pick],entries:[],phase:'select'};await saveDraft();filter=pick[0];search='';view='select';render();return;}
  if(a==='summary'){view='session:draft';render();return;}
- if(a==='select'){view='select';selection=null;if(draft){draft.selection=null;draft.phase='select';await saveDraft();}render();return;}
+ if(a==='select'){view='select';if(!selection?.started)selection=null;if(draft){draft.selection=selection;draft.phase='select';await saveDraft();}render();return;}
  if(a==='regrip'){view='grip';await saveSelection();render();return;}
  if(a.startsWith('grip:')){selection.grip=a.slice(5);selection.weight=suggestWeight(sessions,selection.exercise,selection.grip,selection.cableStation);view='setup';await saveSelection();render();return;}
  if(a.startsWith('ds-sets:')||a.startsWith('ds-drop:')){const info={...(selection.dropsetInfo||dsDefault())};info[a.startsWith('ds-sets:')?'sets':'drop']=a.split(':')[1];selection.dropsetInfo=info;await saveSelection();render();return;}
