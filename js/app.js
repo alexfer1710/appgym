@@ -378,18 +378,18 @@ function priorCard(){
 function renderSetup(){
  const e=selection.exercise,fixed=e.name.startsWith('Curl 15')?15:e.name.startsWith('Curl 21')?21:null;
  const customSets=![3,4,5].includes(selection.sets),customReps=!selection.toFailure&&![6,8,10,12].includes(selection.reps);
- show(`<div class="setup-photo">${e.image?`<img src="${esc(e.image)}" alt="">`:muscleIcon(e.group)}<div class="float-bar"><button type="button" class="icon-btn" data-back data-action="select" aria-label="Volver a los ejercicios">${icon('chevron-left')}</button></div><span class="pill">${icon('dumbbell')}${esc(e.group)}</span></div>
+ show(`<div class="setup-photo">${e.image?`<img src="${esc(e.image)}" alt="">`:muscleIcon(e.group)}<div class="float-bar">${selection.started?`<button type="button" class="icon-btn" data-back data-action="active" aria-label="Volver al ejercicio">${icon('chevron-left')}</button>`:`<button type="button" class="icon-btn" data-back data-action="select" aria-label="Volver a los ejercicios">${icon('chevron-left')}</button>`}</div><span class="pill">${icon('dumbbell')}${esc(e.group)}</span></div>
 <div class="pad">
 <div class="setup-head"><div class="grow"><h1>${esc(e.name)}</h1>${selection.grip?`<button type="button" class="link grip-link" data-action="${e.grips.length>1?'regrip':'noop'}">Agarre: ${esc(selection.grip)}${e.grips.length>1?' · Cambiar':''}</button>`:''}</div>${unilateralMode(e)==='optional'?`<label class="mini-toggle"><small>Unilateral</small>${toggle('unilateral',selection.unilateral,'unilateral')}</label>`:unilateralMode(e)==='always'?'<span class="tag">Unilateral</span>':''}</div>
 ${e.usesCable?`<section class="card block"><div class="caption">Polea</div>${segButtons(STATIONS.map(([v,l])=>['station:'+v,l,selection.cableStation===v]))}</section>`:''}
 <section class="card block"><div class="between caption"><span>Series objetivo</span><span class="plain">${plural(selection.sets,'serie programada','series programadas')}</span></div><div class="choices">${[3,4,5].map(n=>btn(n,'sets:'+n,selection.sets===n?'on':'')).join('')}${btn(customSets?selection.sets:'Otro','custom:sets',customSets?'on':'')}</div></section>
 <section class="card block"><div class="caption">Repeticiones por serie</div>${fixed?`<strong>${fixed} repeticiones · ${fixed===15?'5 + 5 + 5':'7 + 7 + 7'}</strong>`:`<div class="choices">${[6,8,10,12].map(n=>btn(`${n}<small>reps</small>`,'reps:'+n,!selection.toFailure&&selection.reps===n?'on':'')).join('')}${btn(customReps?`${selection.reps}<small>reps</small>`:'Otro','custom:reps',customReps?'on':'')}</div><div class="choices">${btn('Al fallo','failure',selection.toFailure?'on':'')}</div>`}</section>
 <section class="list"><label class="row"><span class="row-label">Dropset</span>${toggle('dropset',selection.dropset,'dropset')}</label>${selection.dropset?`<div class="row wrap"><span class="row-label">¿En qué series?</span>${segButtons(DS_SETS.map(([v,l])=>['ds-sets:'+v,l,(selection.dropsetInfo||dsDefault()).sets===v]))}</div><div class="row wrap"><span class="row-label">¿Cuánto bajas?</span>${segButtons(DS_DROP.map(([v,l])=>['ds-drop:'+v,l,(selection.dropsetInfo||dsDefault()).drop===v]))}</div>`:''}</section>${selection.dropset?'<p class="footnote">Se guarda el peso de inicio, así que el dropset no cambia la recomendación de peso.</p>':''}
-${priorCard()}</div>`,{bar:false,cls:'flush',footer:`<button type="button" class="primary" data-action="begin">Empezar ejercicio${icon('play')}</button>`});
+${priorCard()}</div>`,{bar:false,cls:'flush',footer:selection.started?`<button type="button" class="primary" data-action="active">Volver al ejercicio${icon('arrow-right')}</button>`:`<button type="button" class="primary" data-action="begin">Empezar ejercicio${icon('play')}</button>`});
 }
 function renderActive(){
  const e=selection.exercise,uni=unilateralMode(e)==='always'||(unilateralMode(e)==='optional'&&selection.unilateral),detail=[selection.grip,e.usesCable?'Polea · '+stationName(selection.cableStation):null,uni?'Unilateral':null,selection.dropset?dsText(selection.dropsetInfo||dsDefault()):null].filter(Boolean).join(' · ');
- show(`${topbar(back('Ajustes del ejercicio','setup'))}<div class="active-view"><div class="timer" id="timer" aria-label="Tiempo efectivo">0:00</div><h1>${esc(e.name)}</h1>${detail?`<small class="muted">${esc(detail)}</small>`:''}<p class="muted">${plural(selection.sets,'serie','series')} · ${selection.toFailure?'al fallo':selection.reps+' repeticiones'}</p>${trackSets?setsTrack():''}
+ show(`${topbar(back('Ejercicios','select'),`<button type="button" class="tool-pill" data-action="setup">${icon('sliders')}Ajustes</button>`)}<div class="active-view"><div class="timer" id="timer" aria-label="Tiempo efectivo">0:00</div><h1>${esc(e.name)}</h1>${detail?`<small class="muted">${esc(detail)}</small>`:''}<p class="muted">${plural(selection.sets,'serie','series')} · ${selection.toFailure?'al fallo':selection.reps+' repeticiones'}</p>${trackSets?setsTrack():''}
 ${adviceChip()}<label class="weight-value"><input id="weight" inputmode="decimal" enterkeyhint="done" value="${num(selection.weight)}" aria-label="Peso en kilos (toca para escribirlo)"><span>kg</span></label>${weightRuler(lastWeight())}</div>${priorCard()}`,
  {bar:false,footer:trackSets?activeFooter():`<button type="button" class="primary check" data-action="rate" aria-label="Terminar ejercicio">${icon('check')}</button>`,after:()=>{updateTimer();fitWeight();setupRuler();markAdvice();}});
 }
@@ -575,7 +575,8 @@ async function action(a){
  if(a==='failure'){selection.toFailure=true;await saveSelection();render();return;}
  if(a==='prior'){showPrior();return;}
  if(a==='begin'){if(!selection.started)selection.started=Date.now();view='active';await saveSelection();render();return;}
- if(a==='setup'||a==='active'){view=a;await saveSelection();render();return;}
+ if(a==='setup'||a==='active'){if(a==='setup'&&view==='active')navStack=navStack.filter(e=>e.key!=='setup');   // opening the settings from the exercise is going forward
+  view=a;await saveSelection();render();return;}
  if(a==='set-done'){unlockAudio();haptic();selection.setsDone=setsDone()+1;
   if(selection.setsDone>=selection.sets){selection.ended=Date.now();selection.restUntil=null;view='rating';}
   else{selection.restTotal=restSeconds;selection.restUntil=Date.now()+restSeconds*1000;}
