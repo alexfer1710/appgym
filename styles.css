@@ -579,3 +579,8 @@ body.has-resume[data-chrome=nav] main{padding-bottom:calc(var(--safe-bottom) + 1
 .sum-stats b i{font-style:normal;font-size:13px;font-weight:600;margin-left:2px;color:#6e6e73}
 .sum-stats small{font-size:12px;color:#6e6e73}
 .discard-link{display:block;margin:28px auto 4px;color:#c0352b;font-weight:600;font-size:15px}
+/* more than 4 groups in a workout (added on the fly): the shortcuts scroll sideways */
+.seg[class*="tabs-"]:is(.tabs-7,.tabs-8,.tabs-9,.tabs-10){overflow-x:auto;scrollbar-width:none}
+.seg[class*="tabs-"]:is(.tabs-7,.tabs-8,.tabs-9,.tabs-10)::-webkit-scrollbar{display:none}
+.seg:is(.tabs-6,.tabs-7,.tabs-8,.tabs-9,.tabs-10)>button{font-size:11.5px;padding:0 3px;letter-spacing:-.2px}
+.seg:is(.tabs-7,.tabs-8,.tabs-9,.tabs-10)>button{flex:none;padding:0 10px}
